@@ -779,61 +779,61 @@ Duration scales: raw→p1: 5s, p1→p2: 15s, p2→part: 30s, part→final: 60s, 
 
 ---
 
-### Step 3 — Zustand 게임 스토어
+  ### Step 3 — Zustand 게임 스토어
 
-```
-Create src/store/gameStore.ts using zustand v5 with persist middleware (AsyncStorage backend) for RawWorks.
+  ```
+  Create src/store/gameStore.ts using zustand v5 with persist middleware (AsyncStorage backend) for RawWorks.
 
-Save format: wrap entire state in { version: 1, ...state }.
-Include a migration chain function for future version bumps.
-Save on every state change (debounced 2 seconds).
-ID convention: all resource/recipe/upgrade IDs use snake_case.
+  Save format: wrap entire state in { version: 1, ...state }.
+  Include a migration chain function for future version bumps.
+  Save on every state change (debounced 2 seconds).
+  ID convention: all resource/recipe/upgrade IDs use snake_case.
 
-State shape:
-- resources: Record<resourceId, number>
-- prestigeItems: Record<prestigeItemId, number> (separate from resources, survives resets)
-- diamonds: number (gacha currency, survives resets)
-- activeRecipes: { recipeId, endTime: number, slot: number }[] (endTime = Date.now() + scaledDurationMs)
-- upgrades: Record<upgradeId, number>
-- workers: Worker[] (all owned workers)
-  Worker: { id: string, grade: 'N'|'R'|'U'|'L', abilities: { type: 'yield'|'speed'|'power', multiplier: number }[], level: number, dupeCount: number, locked: boolean }
-- workerAssignments: Record<rawResourceId, workerId | null> (10 slots)
-- gachaPity: number (pity counter for legendary guarantee)
-- mastery: Record<recipeId, { level: number, xp: number }> (production mastery, survives resets)
-- totalPrestigeCount: number (total prestiges across all tiers, used for difficulty scaling)
-- highestStageThisRun: number (highest stage reached in current run, resets on prestige, used for IP calculation)
-- stage: number (1-8)
-- prestigeTier: number (0-3, current highest tier unlocked)
-- prestigeCount: Record<1|2|3, number> (times prestiged per tier)
-- industryPoints: number (permanent currency, survives resets)
-- ipUpgrades: Record<ipUpgradeId, number> (permanent upgrades bought with IP)
-- lastSaveTime: string (ISO)
+  State shape:
+  - resources: Record<resourceId, number>
+  - prestigeItems: Record<prestigeItemId, number> (separate from resources, survives resets)
+  - diamonds: number (gacha currency, survives resets)
+  - activeRecipes: { recipeId, endTime: number, slot: number }[] (endTime = Date.now() + scaledDurationMs)
+  - upgrades: Record<upgradeId, number>
+  - workers: Worker[] (all owned workers)
+    Worker: { id: string, grade: 'N'|'R'|'U'|'L', abilities: { type: 'yield'|'speed'|'power', multiplier: number }[], level: number, dupeCount: number, locked: boolean }
+  - workerAssignments: Record<rawResourceId, workerId | null> (10 slots)
+  - gachaPity: number (pity counter for legendary guarantee)
+  - mastery: Record<recipeId, { level: number, xp: number }> (production mastery, survives resets)
+  - totalPrestigeCount: number (total prestiges across all tiers, used for difficulty scaling)
+  - highestStageThisRun: number (highest stage reached in current run, resets on prestige, used for IP calculation)
+  - stage: number (1-8)
+  - prestigeTier: number (0-3, current highest tier unlocked)
+  - prestigeCount: Record<1|2|3, number> (times prestiged per tier)
+  - industryPoints: number (permanent currency, survives resets)
+  - ipUpgrades: Record<ipUpgradeId, number> (permanent upgrades bought with IP)
+  - lastSaveTime: string (ISO)
 
-Actions:
-- addResource(id, amount)
-- deductResource(id, amount): boolean
-- startRecipe(recipeId, slot): boolean
-- completeRecipe(slot)
-- applyUpgrade(upgradeId)
-- triggerPrestige(tier: 1|2|3) → reset resources/recipes/upgrades, keep IP + ipUpgrades + prestigeItems + mastery + workers + diamonds
-  - IP earned = baseIP(tier) + (highestStageThisRun - tierBaseStage) × 1
-  - Reset highestStageThisRun to 1
-  - Increment totalPrestigeCount
-  - prestigeItems are NOT reset (separate state from resources)
-- buyIpUpgrade(upgradeId) → deduct IP, apply permanent bonus
-- canUnlockTier(tier) → check if "티어 해금" IP upgrade purchased for that tier
-- getMaxProductionSlots() → return 2 + upgrades['workbench'] + ipUpgrades['slot_expansion'] (additive stacking)
-- getMaxOfflineHours() → return 8 + (upgrades['automation'] × 2) + (ipUpgrades['offline_boost'] × 2), cap at 24
-- pullGacha(type: 'single'|'ten') → deduct diamonds, generate workers, update pity
-- assignWorker(rawResourceId, workerId) → place worker on mining slot
-- unassignWorker(rawResourceId) → remove worker from slot
-- recycleWorker(workerId) → convert to diamonds (N:1, R:5, U:15, L:50)
-- feedDuplicateWorker(targetId, feedId) → merge duplicate for level up
-- addMasteryXp(recipeId, xp) → gain XP, check level up, apply bonuses
-- getScaledCost(recipeId) → return adjusted cost based on prestige count + stage
-- getScaledDuration(recipeId) → return adjusted duration (scaling ÷ mastery reduction)
+  Actions:
+  - addResource(id, amount)
+  - deductResource(id, amount): boolean
+  - startRecipe(recipeId, slot): boolean
+  - completeRecipe(slot)
+  - applyUpgrade(upgradeId)
+  - triggerPrestige(tier: 1|2|3) → reset resources/recipes/upgrades, keep IP + ipUpgrades + prestigeItems + mastery + workers + diamonds
+    - IP earned = baseIP(tier) + (highestStageThisRun - tierBaseStage) × 1
+    - Reset highestStageThisRun to 1
+    - Increment totalPrestigeCount
+    - prestigeItems are NOT reset (separate state from resources)
+  - buyIpUpgrade(upgradeId) → deduct IP, apply permanent bonus
+  - canUnlockTier(tier) → check if "티어 해금" IP upgrade purchased for that tier
+  - getMaxProductionSlots() → return 2 + upgrades['workbench'] + ipUpgrades['slot_expansion'] (additive stacking)
+  - getMaxOfflineHours() → return 8 + (upgrades['automation'] × 2) + (ipUpgrades['offline_boost'] × 2), cap at 24
+  - pullGacha(type: 'single'|'ten') → deduct diamonds, generate workers, update pity
+  - assignWorker(rawResourceId, workerId) → place worker on mining slot
+  - unassignWorker(rawResourceId) → remove worker from slot
+  - recycleWorker(workerId) → convert to diamonds (N:1, R:5, U:15, L:50)
+  - feedDuplicateWorker(targetId, feedId) → merge duplicate for level up
+  - addMasteryXp(recipeId, xp) → gain XP, check level up, apply bonuses
+  - getScaledCost(recipeId) → return adjusted cost based on prestige count + stage
+  - getScaledDuration(recipeId) → return adjusted duration (scaling ÷ mastery reduction)
 
-Use AsyncStorage for persistence. Save on every state change (debounced 2s).
+  Use AsyncStorage for persistence. Save on every state change (debounced 2s).
 ```
 
 ---
