@@ -32,15 +32,23 @@
 | 다중 합금 조합 (Bronze = Cu + Sn) | 크로스 체인 조합 |
 | 매니저 시스템 | 작업자(Worker) 시스템 — 등급별 랜덤 능력치 |
 | 행성 프로젝트 | 산업 프로젝트 (대형 완성품) |
-| Rover 업그레이드 (채굴량·속도) | 작업자 가챠 뽑기 (💎 다이아) |
+| Rover 업그레이드 (채굴량·속도) | 작업자 가챠 뽑기 (💎 다이아) + **이동수단·채굴도구 제작** |
 | 생산 반복 → 단순 수량 증가 | 생산 반복 → 숙련도 레벨업 (시간 감소, 산출량 증가, 자동화) |
 | 난이도 고정 (행성별 고정 수치) | 난이도 스케일링 (프레스티지횟수·단계에 따른 비용 증가) |
+| 행성 기반 방사형 채굴 (중앙→행성 왕복) | **산악 기반 방사형 채굴** (중앙 기지→산 왕복, 랜덤 산 이름) |
+| 행성별 다중 광석 분포 (겹침 구조) | 산별 다중 자원 분포 (1~3종 겹침, IPM 동일 패턴) |
+| Rover 단일 업그레이드 (속도만) | **이동수단 진화** (도보→손수레→광차→트럭→자율주행, 속도+적재량) |
+| 우주선 경로 고정 | **도로 건설** (오솔길→자갈길→레일→포장도로→고속도로, 전역 속도 배율) |
+| 완전 방치형 | **수동 채굴 보너스** (산 탭→즉시 수확, 콤보 시스템) |
+| 업적 없음 | **업적 시스템** (7카테고리 ~50개, 💎보상) |
+| 일일 콘텐츠 없음 | **일일 퀘스트** (매일 3개 랜덤, 💎보상) |
+| 튜토리얼 없음 | **가이드 퀘스트 체인** (6단계 튜토리얼) |
 
 ### Planet Miner와 차별화
 
 | 항목 | Planet Miner | Raw Works |
 |------|-------------|-----------|
-| 업그레이드 재화 | 코인(돈) | 만든 완성품 자체 |
+| 업그레이드 재화 | 코인(돈) | 만든 완성품 자체 (바퀴, 곡괭이, 트럭 등 직접 제작) |
 | 체인 구조 | 단일 선형 | 10개 체인 → 크로스 조합 |
 | 프레스티지 | 행성 이주 | 기업 매각 (공장 → 더 큰 부지) |
 | 세계관 | 우주 | 실생활 산업 공정 |
@@ -48,25 +56,321 @@
 | 자원 다양성 | 광석 + 합금 위주 | 광석 + 원유 + 희토류 + 우라늄 + 리튬 등 |
 | 후반 콘텐츠 | 갤럭시 반복 | 첨단 산업 체인 (반도체, 원자력, 전기차) |
 | 채굴 강화 | 업그레이드로 수치 증가 | 작업자 가챠 — 등급별 랜덤 능력 조합 |
+| 이동 수단 | Rover 단일 업그레이드 | **도보→손수레→광차→트럭→자율주행** 진화 (속도+적재량) |
 | 매니저 | 구매로 고정 효과 | 작업자 배치 + 등급(N/R/U/L) + 확률형 능력치 |
 | 성장 방식 | 업그레이드 구매만 | 생산 숙련도 (만들수록 능력치↑) + 업그레이드 + 작업자 |
 | 난이도 | 선형 고정 | 프레스티지 반복에 따른 동적 스케일링 |
+| 채굴 맵 | 행성 (우주 테마) | **산** (랜덤 명명, 실생활 광산 테마) |
+| 채굴 시각화 | 우주선이 행성 왕복 | **도보→손수레→광차→트럭 진화** 산으로 왕복 (방사형 레이아웃 동일) |
+| 도로 시스템 | 경로 변경 없음 | **도로 등급 업그레이드** (굴삭길→고속도로, 이동속도 시너지) |
+| 수동 채굴 | 자동만 | **탭 채굴** (즉시 수확 + 콤보 배율) |
+| 튜토리얼 | 없음 | **6단계 가이드 퀘스트** (💎40 보상) |
+| 업적 | 없음 | **7카테고리 ~50개** (💎1500 총 보상) |
+| 일일 퀘스트 | 없음 | **매일 3개 랜덤** (접속 동기) |
+| 작업자 개성 | 이름 없음 | **랜덤 한국어 이름 + 등급별 픽셀 외형** |
 
 ---
 
 ## 2. 핵심 게임플레이 루프
 
 ```
-채취 → 1차 가공 → 2차 가공 → 크로스 조합 → 완성품 → 설비 업그레이드 → 채취 속도 ↑
-         ↗ 작업자 배치 (생산량·속도·능력)          ↘ 중급 크로스 → 최종 크로스 → 프레스티지
-    ↗ 숙련도 ↑ (반복 생산 → 시간↓ 산출↑ 자동화)     ↘ 프레스티지 → 💎다이아 → 가챠 뽑기 → 작업자 획득
+채취 → 1차 가공 → 2차 가공 → 크로스 조합 → 완성품 → 장비 제작 → 채취 효율 ↑
+  ↗ 이동수단 제작 (도보→수레→광차→트럭→자율주행)  ↘ 중급 크로스 → 최종 크로스 → 프레스티지
+  ↗ 채굴도구 제작 (맨손→곡괭이→착암기→굴착기→양자드릴)
+  ↗ 작업자 배치 (생산량·속도·능력)
+  ↗ 숙련도 ↑ (반복 생산 → 시간↓ 산출↑ 자동화)     ↘ 프레스티지 → 💎다이아 → 가챠 뽑기 → 작업자 획득
                                                 ↘ 난이도 스케일링 (비용↑) ← 능력치 강해질수록
 ```
 
 > IPM처럼 "더 깊은 행성을 캘수록 더 좋은 광석 → 더 비싼 합금" 구조.  
-> Raw Works에서는 "더 많은 체인 해금 → 크로스 조합 가능 → 더 강한 업그레이드" 흐름.
+> Raw Works에서는 "더 많은 체인 해금 → 크로스 조합 가능 → 더 강한 장비 제작" 흐름.
 
-완성품이 곧 업그레이드 재료. "내가 만든 착암기로 더 빨리 캔다" — 생산과 성장이 하나의 루프로 연결됨.
+채굴한 자원이 곧 장비 재료. "캔 철로 바퀴를 만들고, 바퀴로 더 빨리 실어 나른다" — 생산과 성장이 하나의 루프로 연결됨.
+
+---
+
+## 2-1. 산악 채굴 시스템 (Mountain Mining)
+
+> IPM에서 중앙의 우주선이 여러 행성을 왔다갔다하며 광석을 채굴하는 것처럼,  
+> Raw Works에서는 **중앙 기지(공장)**에서 **여러 산**으로 왕복하며 자원을 채취한다.  
+> 처음에는 **걸어서** 산까지 이동하지만, 채굴한 자원으로 **바퀴 → 광차 → 트럭** 등을 제작하면  
+> 이동 속도와 적재량이 올라간다. 이동수단이 진화할수록 왕복 시간이 줄고, 한 번에 더 많이 실어 나른다.  
+> 각 산에는 1~3종의 자원이 분포하며, IPM과 동일한 **겹침 분포(overlapping distribution)** 패턴을 사용.
+
+### 핵심 구조
+
+```
+                    ⛰️ 청봉산 (원목)
+                  ↗
+      ⛰️ 백운봉 (원목,철광석)
+            ↗
+🏭 중앙 기지 ← 🚶도보/🛒수레/⛏️광차/🚛트럭 왕복 → ⛰️ 금강산 (원목,철광석,원유)
+            ↘
+      ⛰️ 적벽령 (철광석,원유)
+                  ↘
+                    ⛰️ 흑철산 (원유,보크사이트)
+                        ...
+```
+
+- 화면: **방사형 레이아웃** — 중앙에 기지, 주변 360°에 산 배치 (IPM 행성 배치와 동일)
+- 기지 ↔ 산 사이에 연결선 (`react-native-svg`), **이동수단 레벨에 따라 이모지 아이콘** 왕복 애니메이션 (`reanimated translateX/Y`)
+  - **MVP (Phase 1)**: 이모지/아이콘이 연결선 위를 왕복 이동 + 도착 시 텍스트 팝업
+  - **v1.5 (Phase 2)**: `@shopify/react-native-skia` Canvas로 업그레이드 — 스프라이트 시트, 파티클, 경로 애니메이션
+- 각 산마다 독립적으로 이동수단이 왕복 (산당 1개 `SharedValue`)
+- 산을 탭하면 해당 산의 자원 정보 + 배치된 작업자 표시
+- IPM처럼 **모든 해금된 산이 동시에 자동 채굴** (자원이 자동 흘러들어옴)
+
+### 산 목록 & 자원 분포
+
+> IPM 패턴: 새 자원이 기존 자원과 겹쳐서 등장 → 기존 자원이 빠짐 → 새 자원만 남음 → 다음 자원과 겹침 반복
+
+| # | 산 ID | 자원 조성 | 해금 단계 | 기본 왕복(초) | IPM 대응 행성 |
+|---|--------|---------|----------|------------|-------------|
+| 1 | mountain_1 | 원목 | 1 | 2.0 | Mercury (Cu) |
+| 2 | mountain_2 | 원목, 구리광석 | 1 | 2.5 | Venus (Cu,Fe) |
+| 3 | mountain_3 | 원목, 구리광석, 철광석 | 2 | 3.0 | Earth (Cu,Fe,Pb) |
+| 4 | mountain_4 | 구리광석, 철광석 | 2 | 3.5 | Mars (Fe,Pb) |
+| 5 | mountain_5 | 철광석, 원유 | 2 | 4.0 | Asteroid (Pb,Si) |
+| 6 | mountain_6 | 철광석, 원유, 보크사이트 | 2 | 4.5 | Jupiter (Pb,Si,Al) |
+| 7 | mountain_7 | 원유, 보크사이트 | 3 | 5.0 | Saturn (Si,Al) |
+| 8 | mountain_8 | 보크사이트, 석영 | 4 | 5.5 | Uranus (Al,Ag) |
+| 9 | mountain_9 | 보크사이트, 석영, 리튬광석 | 4 | 6.0 | Neptune (Al,Ag,Au) |
+| 10 | mountain_10 | 석영, 리튬광석 | 4 | 6.5 | Pluto (Ag,Au) |
+| 11 | mountain_11 | 리튬광석, 금광석 | 4 | 7.0 | Eris (Au,Pt) |
+| 12 | mountain_12 | 금광석, 희토류광석 | 5 | 8.0 | Sedna (Pt,Pd) |
+| 13 | mountain_13 | 금광석, 희토류광석, 우라늄광석 | 6 | 9.0 | Nibiru (Pt,Pd,Ir) |
+| 14 | mountain_14 | 희토류광석, 우라늄광석 | 6 | 10.0 | Nemesis (Pd,Ir) |
+| 15 | mountain_15 | 우라늄광석 | 6 | 11.0 | X (Ir) |
+
+> 총 15개 산, 10종 원자재. 각 자원이 2~4개 산에 걸쳐 분포.
+
+### 산 이름 랜덤 생성
+
+> 게임 시작(또는 프레스티지) 시 각 산에 **랜덤 한국어 산 이름** 부여 (프레스티지 시 유지).
+
+**이름 생성 규칙:**
+```
+산 이름 = [접두어] + [접미어]
+
+접두어 풀 (20종):
+  청(靑), 백(白), 금(金), 적(赤), 흑(黑), 은(銀), 녹(綠), 철(鐵),
+  수(水), 화(火), 운(雲), 용(龍), 호(虎), 봉(鳳), 월(月), 성(星),
+  천(天), 옥(玉), 자(紫), 비(翡)
+
+접미어 풀 (10종):
+  봉산, 악산, 령, 봉, 골산, 암산, 대산, 운산, 정산, 광산
+
+예시: 청봉산, 백운령, 금악산, 용대산, 자정산, 옥광산...
+```
+
+- 15개 산 × (20 × 10 = 200 조합) → 충분한 다양성
+- 이름은 초회 생성 후 `AsyncStorage`에 저장 (프레스티지 리셋에도 보존)
+- UI에서 산 이름 표시: "⛰️ 청봉산: 원목, 철광석"
+
+### 채굴 & 운반 메커니즘
+
+> IPM의 우주선(Rover)에 대응. 각 산마다 **독립된 운반 수단**이 지속적으로 왕복.  
+> 처음에는 맨손으로 걸어가서 캐지만, 자원을 모아 더 좋은 **이동수단**과 **채굴도구**를 만들 수 있다.
+
+```
+1회 채굴 사이클:
+  출발 (기지 → 산) → 채굴 → 귀환 (산 → 기지) → 자원 적재
+  총 소요 시간 = 기본 왕복 시간 / (speedMultiplier)
+
+  speedMultiplier = 이동수단 속도 배율          ← 도보(×1) → 손수레(×1.5) → ... → 자율주행(×4.5)
+                    × 도로 속도 배율            ← 오솔길(×1) → 자갈길(×1.2) → ... → 고속도로(×2.5)
+                    × IP '채굴 속도 강화' 배율
+                    × 해당 산 작업자 Speed 배율
+
+1회 채굴 산출량 (산에 있는 자원 종류별):
+  amount = baseYield(1) × 이동수단 적재량       ← 도보(1) → 손수레(2) → ... → 자율주행(6)
+                        × 채굴도구 산출 배율     ← 맨손(×1) → 곡괭이(×1.5) → ... → 양자드릴(×4)
+                        × IP '채굴 산출 강화' 배율
+                        × 해당 산 작업자 Yield 배율
+
+예시: 산 3번 (원목, 철광석, 원유), 왕복 3초
+      이동수단: 광차(속도×2, 적재2), 채굴도구: 곡괭이(×1.5), 도로: 자갈길(×1.2)
+  → 왕복 시간 = 3 / (2 × 1.2) = 1.25초
+  → 산출량 = 1 × 2 × 1.5 = 3.0 (각 자원별)
+  → 1.25초마다 원목 3, 철광석 3, 원유 3 획득
+```
+
+**핵심 특징:**
+- **동시 채굴**: 해금된 모든 산이 동시에 채굴 (IPM과 동일)
+- **거리 패널티**: 먼 산(번호 높을수록) = 왕복 시간 증가 → 희귀 자원은 느리게 수급
+- **작업자 배치**: 산마다 1명씩 배치 → 해당 산의 채굴 효율 강화
+- **이동수단 진화**: 걷는 캐릭터 → 수레 → 레일 광차 → 트럭 → 자율주행 트럭 (아이콘 변경 MVP / 스프라이트 변경 v1.5)
+- **시각적 피드백**: 이동수단 왕복 아이콘 애니메이션 + 자원 획득 시 텍스트 팝업 (MVP) → 파티클 이펙트 (v1.5)
+
+### 이동수단 업그레이드 (Transport Evolution)
+
+> 채굴한 자원으로 직접 만드는 **이동수단**. 만들수록 빠르고 많이 실어 나른다.  
+> "맨손으로 걸어서 나무 한 개 줍기 → 트럭에 가득 싣고 오기"까지의 성장을 체감.
+
+| Lv | 이동수단 | 속도 배율 | 적재량 | 제작 재료 | 해금 단계 | 시각 연출 |
+|----|---------|----------|--------|----------|----------|----------|
+| 0 | 🚶 도보 (Walking) | ×1.0 | 1 | — (시작) | 1 | 🚶 아이콘 왕복 (MVP) → 걷기 스프라이트 (v1.5) |
+| 1 | 🛒 손수레 (Wheelbarrow) | ×1.5 | 2 | 목재×5 + 동괴×3 | 1 | 🛒 아이콘 왕복 (MVP) → 수레 스프라이트 (v1.5) |
+| 2 | ⛏️ 광차 (Mining Cart) | ×2.0 | 3 | 강철판×3 + 구리선×5 + 목재×10 | 2 | ⛏️ 아이콘 왕복 (MVP) → 레일 광차 스프라이트 (v1.5) |
+| 3 | 🚛 트럭 (Truck) | ×3.0 | 4 | 복합소재패널×3 + 전기장치×2 + 폴리머×5 | 3 | 🚛 아이콘 왕복 (MVP) → 트럭 스프라이트 (v1.5) |
+| 4 | 🤖 자율주행 트럭 (Auto Truck) | ×4.5 | 6 | 전기차유닛×1 + AI컴퓨팅유닛×1 | 7 | 🤖 아이콘 왕복 (MVP) → 무인트럭 스프라이트 (v1.5) |
+
+**이동수단 재료 원산지 (어디서 뭘 모아야 하는가):**
+```
+Lv.1 손수레:  원목(1단계) → 목재,  구리광석(1단계) → 동괴
+              → 목재×5 + 동괴×3  ← 1단계 자원만으로 제작 가능! (첫 업그레이드)
+
+Lv.2 광차:    철광석(2단계) → 선철 → 강철판,  구리광석(1단계) → 동괴 → 구리선
+              → 강철판×3 + 구리선×5 + 목재×10  ← 2단계 자원 필요
+
+Lv.3 트럭:    복합소재패널 = 강철판 + 알루미늄판재 + 폴리머 (크로스 조합)
+              전기장치 = 구리 체인 완성품
+              → 복합소재패널×3 + 전기장치×2 + 폴리머×5  ← 3단계 크로스 필요
+
+Lv.4 자율주행: 전기차유닛 = 배터리팩 + 고효율모터 + 경량프레임 (중급 크로스)
+              AI컴퓨팅유닛 = 고급회로보드 + 에너지저장장치 + 마이크로프로세서 (최종 크로스)
+              → 전기차유닛×1 + AI컴퓨팅유닛×1  ← 7단계 최종 크로스 필요
+```
+
+### 채굴도구 업그레이드 (Mining Tools)
+
+> 더 좋은 도구로 더 많이 캔다. 이동수단과 별개로 **캐는 효율**만 증가.
+
+| Lv | 채굴도구 | 산출 배율 | 제작 재료 | 해금 단계 |
+|----|---------|----------|----------|----------|
+| 0 | ✊ 맨손 (Bare Hands) | ×1.0 | — (시작) | 1 |
+| 1 | ⛏️ 곡괭이 (Pickaxe) | ×1.5 | 목재×3 + 동괴×5 | 1 |
+| 2 | 🔨 착암기 (Rock Drill) | ×2.0 | 강철판×5 + 전선다발×3 | 2 |
+| 3 | 🏗️ 굴착기 (Excavator) | ×3.0 | 복합소재패널×2 + 스마트기계×1 | 3 |
+| 4 | ⚡ 양자드릴 (Quantum Drill) | ×4.0 | AI컴퓨팅유닛×1 + 원자로모듈×1 | 7 |
+
+**채굴도구 재료 원산지:**
+```
+Lv.1 곡괭이:  원목 → 목재,  구리광석 → 동괴
+              → 목재×3 + 동괴×5  ← 1단계 자원만으로 제작 가능!
+
+Lv.2 착암기:  철광석 → 선철 → 강철판,  구리광석 → 동괴 → 구리선 → 전선다발
+              → 강철판×5 + 전선다발×3  ← 2단계 자원 필요
+
+Lv.3 굴착기:  복합소재패널 (크로스), 스마트기계 (크로스)
+              → 복합소재패널×2 + 스마트기계×1  ← 3단계 크로스 필요
+
+Lv.4 양자드릴: AI컴퓨팅유닛 (최종 크로스), 원자로모듈 (중급 크로스)
+              → AI컴퓨팅유닛×1 + 원자로모듈×1  ← 7단계 최종 크로스 필요
+```
+
+> **최종 산출 공식:**  
+> 1회 왕복 산출 = 이동수단 적재량 × 채굴도구 배율 × IP 배율 × 작업자 Yield 배율  
+> 왕복 시간 = 기본 왕복(초) / (이동수단 속도 배율 × **도로 속도 배율** × IP 속도 배율 × 작업자 Speed 배율)
+
+### 산 해금과 단계 전환 연동
+
+| 단계 | 해금되는 산 | 신규 자원 |
+|------|-----------|----------|
+| 1단계 | #1, #2 | 원목, 구리광석 |
+| 2단계 | #3, #4, #5, #6 | 철광석, 원유, 보크사이트 |
+| 3단계 | #7 | — (기존 자원 조합) |
+| 4단계 | #8, #9, #10, #11 | 석영, 리튬광석, 금광석 |
+| 5단계 | #12 | 희토류광석 |
+| 6단계 | #13, #14, #15 | 우라늄광석 |
+
+### 부산물 드랍 (작업자 Power 능력 연동)
+
+> 산 기반 채굴에서 Power 능력의 역할 재정의:
+
+- Power 작업자가 배치된 산에서 채굴 시, **같은 단계에서 해금된 raw resource 풀** 중 랜덤 1종(자신 제외)을 추가 드랍
+- 확률: `(workerPowerMultiplier - 1) × 100`% (기존과 동일)
+- 예: 산 #5(철광석, 원유)에서 철광석 채굴, Power ×1.3 작업자 배치
+  → 2단계 해금 풀(철광석, 원유, 보크사이트) 중 자신 제외 → 30% 확률로 원유 또는 보크사이트 1개 추가
+- 예: 산 #2(원목, 구리광석)에서 원목 채굴, Power ×1.2 작업자 배치
+  → 1단계 해금 풀(원목, 구리광석) 중 자신 제외 → 20% 확률로 구리광석 1개 추가
+
+> **§5 작업자 시스템의 부산물 규칙과 동일한 기준을 사용한다.**
+
+### 도로 건설 시스템 (Road Building)
+
+> 기지에서 산까지의 **길**을 개선하여 모든 산에 대한 이동 속도를 일괄 강화.  
+> 이동수단이 "무엇을 타고 가느냐"라면, 도로는 "어떤 길 위를 가느냐"에 해당.  
+> 두 배율이 곱연산되어 후반부로 갈수록 큰 시너지를 발휘한다.
+
+| Lv | 도로 | 속도 배율 | 제작 재료 | 해금 단계 | 시각 연출 |
+|----|------|----------|----------|----------|----------|
+| 0 | 🛤️ 오솔길 (Dirt Path) | ×1.0 | — (시작) | 1 | 점선 연결 |
+| 1 | 🪨 자갈길 (Gravel Road) | ×1.2 | 목재×10 + 합판×5 | 1 | 회색 실선 |
+| 2 | 🚂 레일 (Rail Track) | ×1.5 | 강철판×5 + 목재×15 | 2 | 레일 트랙 |
+| 3 | 🛣️ 포장도로 (Paved Road) | ×2.0 | 복합소재패널×5 + 폴리머×10 + 강철판×10 | 3 | 진한 도로 |
+| 4 | 🏎️ 고속도로 (Highway) | ×2.5 | 스마트기계×2 + 고급회로보드×1 + 경량프레임×10 | 5 | 넓은 고속도로 |
+
+**도로 재료 원산지:**
+```
+Lv.1 자갈길:   원목(1단계) → 목재, 목재 → 합판
+               → 목재×10 + 합판×5  ← 1단계 자원 (목재 체인 2단계까지)
+
+Lv.2 레일:     철광석(2단계) → 선철 → 강철판
+               → 강철판×5 + 목재×15  ← 2단계 자원 필요
+
+Lv.3 포장도로:  복합소재패널 (크로스), 원유 → 나프타 → 폴리머
+               → 복합소재패널×5 + 폴리머×10 + 강철판×10  ← 3단계 크로스 필요
+
+Lv.4 고속도로:  스마트기계 (크로스), 고급회로보드 (크로스), 알루미늄 → 경량프레임
+               → 스마트기계×2 + 고급회로보드×1 + 경량프레임×10  ← 5단계 크로스 필요
+```
+
+**핵심 특징:**
+- **전역 적용**: 한 번 업그레이드하면 모든 산에 동시 적용 (산별 개별 건설 X)
+- **이동수단과 곱연산**: `왕복시간 = 기본왕복 / (이동수단속도 × 도로속도 × IP속도 × 작업자Speed)`
+- **건축자재 중심 비용**: 이동수단·채굴도구와 다른 재료군 사용 → 자원 충돌 최소화
+- **프레스티지 시 리셋**: 일반 업그레이드로 분류 (이동수단·채굴도구와 동일)
+- **시각 연출**: 기지↔산 연결선이 도로 등급에 따라 SVG 스타일 변경 (점선 → 자갈 → 레일 → 포장 → 고속도로) — `react-native-svg` 사용 (Phase 1)
+
+> **이동수단 × 도로 시너지 예시:**
+> 광차(속도×2) + 레일(×1.5) = 총 ×3.0 → 트럭(속도×3) + 자갈길(×1.2) = 총 ×3.6  
+> 레일은 광차와 궁합이 좋고, 트럭은 포장도로 이상에서 극대화. 전략적 선택.
+
+### 수동 채굴 보너스 (Tap Mining)
+
+> 방치형이지만 가끔 터치하면 보상! 산을 탭해 즉시 자원을 수확하는 능동적 참여 시스템.
+
+| 항목 | 내용 |
+|------|------|
+| 트리거 | 산 아이콘 탭 |
+| 효과 | 해당 산의 1회 왕복 즉시 완료 (자원 즉시 획득) |
+| 쿨다운 | 산당 5초 |
+| 콤보 | 5초 내 **다른 산**을 연속 탭 시 콤보 발동: ×1.5 → ×2.0 → ×3.0 (최대) |
+| 콤보 리셋 | 5초 동안 탭이 없으면 콤보 초기화 |
+| 시각 연출 | 탭 시 텍스트 팝업 "+3 🪵 +2 ⛏️" (`reanimated fadeIn/translateY`) (MVP) → 파티클 이펙트 (v1.5) |
+
+**핵심:**
+- **자동 채굴과 독립**: 수동 탭은 자동 채굴 타이머에 영향을 주지 않음 (순수 보너스)
+- **콤보 미니게임**: 여러 산을 빠르게 순회 탭하는 미니게임적 재미
+- **능동 참여 유도**: 방치 중에도 가끔 탭하면 2~3배 자원 추가 획득 가능
+- **작업자 수동 보너스**: 작업자 배치된 산 탭 시 작업자 Yield 배율도 적용됨
+
+### 시각 연출 구현 전략 (Phased Animation)
+
+> 채굴 화면 애니메이션을 **2단계**로 나누어 구현. MVP에서는 가볍고 안정적인 아이콘 기반 연출을, v1.5에서는 Skia Canvas로 풀 2D 연출을 적용한다.
+
+**Phase 1 — MVP (react-native-reanimated + react-native-svg)**
+| 요소 | 구현 방식 |
+|------|----------|
+| 이동수단 왕복 | 이모지/아이콘(🚶🛒⛏️🚛🤖)을 `useSharedValue` + `withRepeat(withTiming)` 으로 SVG 연결선 위 translateX/Y 왕복 |
+| 도로 연결선 | `react-native-svg` `<Line>` / `<Path>` — 등급별 strokeDasharray 변경 (점선→실선→레일) |
+| 자원 획득 | 텍스트 팝업 "+3 🪵" → `fadeIn` + `translateY(-30)` + `fadeOut` (reanimated) |
+| 수동 채굴 탭 | 산 아이콘 `scale` 펄스 + 텍스트 팝업 |
+| 콤보 게이지 | `<Animated.View>` width 비율 애니메이션 |
+| 산 15개 동시 | 산당 1개 SharedValue (progress 0→1→0) — 최대 15개 독립 애니메이션 |
+
+**Phase 2 — v1.5 (@shopify/react-native-skia)**
+| 요소 | 업그레이드 내용 |
+|------|---------------|
+| 채굴 맵 전체 | `<Canvas>` 1개로 통합 렌더링 (60fps GPU 가속) |
+| 이동수단 | 스프라이트 시트 Atlas → `drawAtlas()` 프레임 애니메이션 |
+| 도로 | Skia Path + dashPathEffect 실시간 변경 |
+| 파티클 이펙트 | 자원 도착 시 원형 파티클 발산 (drawCircle 루프) |
+| 경로 이동 | `getPointAtLength()` 로 곡선 경로 추적 |
+| 번들 영향 | +4~6 MB (네이티브 바이너리 포함), Expo 호환 |
+
+> **전환 기준**: MVP 안정화 후 메인 채굴 맵 영역만 Skia Canvas로 교체. 나머지 UI(탭, 바텀시트, 목록)는 reanimated 유지.
 
 ---
 
@@ -85,10 +389,10 @@
 | 원자재 | 체인 | 해금 단계 | 최종 완성품 | IPM 대응 |
 |--------|------|----------|------------|----------|
 | 원목 | 목재 | 1 | 책상 | Copper (기본) |
-| 철광석 | 철광 | 1 | 공장 설비 | Iron (기본) |
-| 원유 | 석유 | 2 | 케이스/용기 | Lead |
-| 보크사이트 | 알루미늄 | 2 | 항공 부품 | Aluminum |
-| 구리광석 | 구리 | 2 | 전기 장치 | Silver |
+| 구리광석 | 구리 | 1 | 전기 장치 | Iron (기본) |
+| 철광석 | 철광 | 2 | 공장 설비 | Lead |
+| 원유 | 석유 | 2 | 케이스/용기 | Aluminum |
+| 보크사이트 | 알루미늄 | 2 | 항공 부품 | Silver |
 | 석영 | 실리콘 | 4 | 마이크로프로세서 | Silica |
 | 리튬광석 | 리튬 | 4 | 에너지 저장장치 | Titanium |
 | 금광석 | 금 | 4 | 정밀 전자장치 | Gold |
@@ -97,28 +401,32 @@
 
 ---
 
-### 🪵 목재 체인
+### 🪵 목재 체인 (1단계 해금)
 
 ```
 [원목] → [목재] → [합판] + [목재] → [가구 부품] → [책상]
 ```
 
-### ⛏️ 철광 체인
+### 🩨 구리 체인 (1단계 해금)
+
+```
+[구리광석] → [동괴] → [구리선] + [동괴] → [전선 다발] → [전기 장치]
+```
+
+> 구리는 인류 최초의 금속. 첫 장비(손수레, 곡괭이)를 만드는 핵심 재료.
+
+### ⛏️ 철광 체인 (2단계 해금)
 
 ```
 [철광석] → [선철] → [강철판] + [선철] → [철골 프레임] → [공장 설비]
 ```
 
-### 🛢️ 석유 체인
+> 철은 구리보다 강력하지만 더 늦게 해금. 광차, 착암기 등 중반 장비의 핵심 소재.
+
+### 🛢️ 석유 체인 (2단계 해금)
 
 ```
 [원유] → [나프타] → [폴리머] + [나프타] → [플라스틱 소재] → [케이스 / 용기]
-```
-
-### 🪨 구리 체인
-
-```
-[구리광석] → [동괴] → [구리선] + [동괴] → [전선 다발] → [전기 장치]
 ```
 
 ---
@@ -232,7 +540,7 @@
 > | 산업 포인트(IP) | 프레스티지 시 획득하는 **영구 재화** (리셋되지 않음) |
 > | IP 획득량 | 티어1: 1~3 IP, 티어2: 5~10 IP, 티어3: 20~50 IP |
 > | IP 스케일링 | 리셋 시 도달한 단계가 높을수록 IP 배율 증가 |
-> | 리셋 범위 | 자원 + 일반 업그레이드 초기화, IP + IP업그레이드 + 프레스티지 아이템 + 숙련도 + 작업자 + 💎다이아 보존 |
+> | 리셋 범위 | 자원 + 일반 업그레이드(이동수단·채굴도구·도로·제련설비·자동화·작업대 포함) 초기화, IP + IP업그레이드 + 프레스티지 아이템 + 숙련도 + 작업자 + 💎다이아 보존 |
 > | 티어 해금 조건 | 티어2: "티어 해금" IP업그레이드 구매 필요 (10 IP), 티어별 1회 |
 >
 > **IP 획득량 계산 기준 (해결):**  
@@ -264,26 +572,30 @@
 
 ## 4. 업그레이드 구조
 
-완성품을 소모해 설비를 업그레이드. 돈이 아닌 물건으로 성장하는 구조.
+채굴한 자원과 만든 물건으로 장비를 직접 제작해 성장하는 구조. 돈이 아닌 **내가 만든 것**으로 능력이 좋아진다.
 
-| 업그레이드 | 재료 | 효과 |
-|-----------|------|------|
-| 곡괭이 → 착암기 → 굴착기 → 양자드릴 | 강철판 + 철골 프레임 → 복합 소재 패널 | 채취속도 +50%, 틱당 획득량 ↑ |
-| 용광로 → 전기로 → 아크로 → 플라즈마로 | 선철 + 전선 다발 → 원자로 모듈 | 제련시간 -30%, 부산물 획득 |
-| 수동 → 컨베이어 → 로봇팔 → AI 라인 | 스마트 기계 + 플라스틱 소재 → AI 컴퓨팅 유닛 | 오프라인 수익 +2시간 |
-| 목재 → 철제 → 첨단 작업대 → 나노 작업대 | 가구 부품 + 전기 장치 → 고급 회로보드 | 조합 슬롯 +1 (동시 생산) |
-| 소규모 → 공장 → 산업단지 → 미래도시 | 공장 설비 + 복합 소재 패널 → 스마트 시티 모듈 → 미래도시×1 | 채취 지점 +1 (병렬 채굴) |
-| 연구소 건설 | 스마트 기계 + 책상 | 실리콘·리튬·금 체인 해금 |
-| 연구소 Lv.2 — 첨단 연구소 | 고급 회로보드 + 정밀 전자장치 | 희토류·우라늄·최종 크로스 해금 |
-| 에너지 그리드 | 발전기 코어 + 에너지 저장장치 | 전체 생산속도 ×1.5 |
+| 카테고리 | 업그레이드 경로 | 제작 비용 (단계별) | 효과 |
+|---------|---------------|-------------------|------|
+| �️ 도로 | 오솔길 → 자갈길 → 레일 → 포장도로 → 고속도로 | 목재+합판 → 강철판+목재 → 복합소재패널+폴리머+강철판 → 스마트기계+고급회로보드+경량프레임 | 전역 이동속도 ×1.2~×2.5 (§2-1 참조) |
+| �🚛 이동수단 | 도보 → 손수레 → 광차 → 트럭 → 자율주행 트럭 | 목재+동괴 → 강철판+구리선+목재 → 복합소재패널+전기장치+폴리머 → 전기차유닛+AI컴퓨팅유닛 | 이동속도 ↑ + 적재량 ↑ (§2-1 참조) |
+| ⛏️ 채굴도구 | 맨손 → 곡괭이 → 착암기 → 굴착기 → 양자드릴 | 목재+동괴 → 강철판+전선다발 → 복합소재패널+스마트기계 → AI컴퓨팅유닛+원자로모듈 | 채굴 산출량 ×1.5 per level |
+| 🔥 제련설비 | 용광로 → 전기로 → 아크로 → 플라즈마로 | 동괴+전선다발 → 강철판+구리선 → 발전기코어 → 원자로모듈 | 제련시간 -30% per level |
+| 🤖 자동화 | 수동 → 컨베이어 → 로봇팔 → AI 라인 | 스마트기계+플라스틱소재 → 고급회로보드 → AI컴퓨팅유닛 | 오프라인 최대 시간 +2h per level |
+| 🔧 작업대 | 목재 → 철제 → 첨단 작업대 → 나노 작업대 | 가구부품+전기장치 → 고급회로보드 → 마이크로프로세서 | 생산 슬롯 +1 per level |
+| 🔬 연구소 | Lv.1 건설 → Lv.2 첨단 연구소 | 스마트기계+책상 → 고급회로보드+정밀전자장치 | Lv.1: 4단계 해금 / Lv.2: 6단계 해금 |
+| ⚡ 에너지 그리드 | — (1회성) | 발전기코어+에너지저장장치 | 전체 생산속도 ×1.5 |
+
+> **이동수단 + 채굴도구 = 두 축 성장:**  
+> 이동수단은 "빨리 많이 나르기", 채굴도구는 "효율적으로 캐기" → 곱연산으로 둘 다 중요.  
+> 초반에는 이동수단부터 올리면 체감이 크고(적재량 2배), 중반부터는 채굴도구도 함께 올려야 한다.
 
 > **생산 슬롯 합산 규칙:**  
 > 최종 생산 슬롯 = 기본 슬롯(2) + 작업대 업그레이드 레벨 + IP 업그레이드 `슬롯 확장` 레벨  
 > 예: 철제 작업대(Lv.2) + IP 슬롯 확장 2회 = 2 + 2 + 2 = **6 슬롯**  
 > 두 시스템은 단순 합산이며 독립적으로 적용된다.
 
-> **시설규모 업그레이드 Lv.4 비용 보충:**  
-> Lv.4(미래도시): 미래도시×1 — 최종 프레스티지 아이템으로 최대 채취 지점 해근.
+> **이동수단 업그레이드 Lv.4 비용 보충:**  
+> Lv.4(자율주행 트럭): 전기차유닛×1 + AI컴퓨팅유닛×1 — 최고급 이동수단으로 속도 ×4.5, 적재량 6 해금.
 
 > **프레스티지 아이템 자산 분류 (해결):**  
 > 프레스티지 아이템(소규모공장, 산업단지, 미래도시)은 일반 자원과 **별도 보존 자산**으로 취급한다.  
@@ -329,8 +641,8 @@
 
 > **부산물 드랍 대상 규칙 (해결):**  
 > 부산물 대상은 **같은 단계에서 해금된 raw resource 풀** 중 랜덤 1종이다.  
-> 예: 철광석 채굴 시 → 1단계 해금 풀(원목, 철광석) 중 자신 제외 → 원목 1개 추가 획득 가능  
-> 예: 구리광석 채굴 시 → 2단계 해금 풀(원유, 보크사이트, 구리광석) 중 자신 제외 → 원유 또는 보크사이트  
+> 예: 철광석 채굴 시 → 2단계 해금 풀(철광석, 원유, 보크사이트) 중 자신 제외 → 원유 또는 보크사이트 1개 추가 획득 가능  
+> 예: 구리광석 채굴 시 → 1단계 해금 풀(원목, 구리광석) 중 자신 제외 → 원목  
 > 확률: `(workerPowerMultiplier - 1) × 100`%  (Power ×1.3 → 30% 확률)
 
 ### 등급 시스템
@@ -349,15 +661,49 @@
 > 3. 각 능력의 배율은 등급 범위 내에서 랜덤 (소수점 1자리)
 > 4. 같은 등급이라도 능력 조합과 수치가 다름 → 수집 + 비교 재미
 
+### 작업자 이름 생성
+
+> 가챠 뽑기 시 랜덤 한국어 이름이 자동 부여되어 캐릭터 애착감 강화.
+
+| 항목 | 내용 |
+|------|------|
+| 생성 규칙 | [성] + [이름] 조합 |
+| 성 풀 (20종) | 김, 이, 박, 최, 정, 강, 조, 윤, 장, 임, 한, 오, 서, 신, 권, 황, 안, 송, 류, 홍 |
+| 이름 풀 (30종) | 철수, 영희, 민수, 지은, 동혁, 수진, 현우, 소연, 준호, 미래, 태양, 은하, 별, 하늘, 바다, 새벽, 솔, 담, 빛, 샘, 한울, 아름, 다솜, 가람, 나래, 누리, 온, 한, 슬, 찬 |
+| 표시 형식 | "김 철수", "박 나래" (등급 테두리 + 이름) |
+| 고유성 | 같은 이름 중복 허용 (동명이인 가능) |
+
+> 20 × 30 = 600 조합 → 작업자 보관함 50명 기준 충분한 다양성.  
+> Worker 타입에 `name: string` 필드 추가.
+
+### 작업자 외형 (픽셀 아트)
+
+> 등급에 따라 외형이 차별화되어, 높은 등급일수록 시각적 만족감 제공.
+
+| 등급 | 기본 외형 | 특수 연출 |
+|------|---------|---------|
+| N (노말) | 회색 작업복 + 헬멧 | — |
+| R (레어) | 파란 작업복 + 안전모 | — |
+| U (유니크) | 보라 작업복 + 고글 + 장갑 | 반짝임 이펙트 |
+| L (전설) | 금색 슈트 + 왕관 + 망토 | 파티클 오라 + 가챠 등장 연출 |
+
+> 가챠 뽑기 시 등급별 연출: N=회색 플래시, R=파란 플래시, U=보라 폭발, L=금색 폭발+화면 흔들림.  
+> WorkerCard UI에 이름 + 외형 + 등급 테두리 + 능력치 조합 표시.
+
 ### 작업자 배치
 
 | 항목 | 내용 |
 |------|------|
-| 배치 슬롯 | 각 원자재 광맥당 1명 (10광맥 = 최대 10명 배치) |
+| 배치 슬롯 | 각 **산**당 1명 (15산 = 최대 15명 배치) |
+| 배치 효과 | 해당 산의 채굴 속도 + 산출량 + 부산물 확률 증가 |
 | 교체 | 언제든 배치/해제/교체 가능 (쿨타임 없음) |
 | 보관함 | 보유 작업자 전체 리스트 (최대 50명, IP 업그레이드로 확장) |
 | 잠금 | 즐겨찾기 잠금으로 실수 분해 방지 |
 | 분해 | 불필요한 작업자 분해 → 💎 다이아 소량 환급 (N:1, R:5, U:15, L:50) |
+
+> **산 기반 배치의 장점:**  
+> IPM의 행성별 매니저와 유사하지만, Raw Works는 작업자의 **능력 조합**이 산의 자원 구성에 따라 시너지를 발휘.  
+> 예: 산 #9(구리광석, 석영, 리튬광석)에 Yield 높은 작업자 배치 → 3종 자원 동시 대량 획득.
 
 ### 💎 다이아몬드 & 가챠 시스템
 
@@ -451,8 +797,10 @@
 ### 스케일링 공식
 
 ```
-최종 비용 = 기본 비용 × (1 + 프레스티지 횟수 × 0.15) × (1 + 해금 단계 × 0.1)
-최종 제작시간 = 기본 시간 × (1 + 프레스티지 횟수 × 0.10) / 숙련도 감소율
+최종 비용 = 기본 비용 × (1 + totalPrestigeCount × 0.15) × (1 + currentStage × 0.1)
+최종 제작시간 = 기본 시간 × (1 + totalPrestigeCount × 0.10) / 숙련도 감소율
+
+※ totalPrestigeCount = 전체 프레스티지 횟수 합산, currentStage = 현재 런의 진행 단계 (프레스티지 시 1로 리셋)
 ```
 
 ### 스케일링 적용 범위
@@ -506,7 +854,7 @@
 
 | 단계 전환 | 해금 조건 |
 |----------|----------|
-| 1 → 2 | 목재 체인 완성품(책상) 1개 생산 |
+| 1 → 2 | 첫 장비 제작: 손수레(이동수단 Lv.1) + 곡괭이(채굴도구 Lv.1) |
 | 2 → 3 | 복합 소재 패널(첫 크로스) 1개 생산 |
 | 3 → 4 | 연구소 건설 업그레이드 적용 (스마트 기계 + 책상) |
 | 4 → 5 | 기초 회로보드 + 첨단 작업대 각 1개 생산 |
@@ -533,18 +881,21 @@
 ---
 
 ### 1단계 — 맨손 개척
-- 원목 + 철광석만 채취 가능
-- 기본 도구 제작, 목재 체인 + 철광 체인 시작
-- **해금:** 용광로, 톱질 작업대
+- 원목 + 구리광석만 채취 가능
+- 목재 체인 + 구리 체인 시작
+- 첫 장비 제작: 손수레(목재+동괴) + 곡괭이(목재+동괴) → **2단계 전환 조건**
+- **해금:** 톱질 작업대, 동제련소
 
 ### 2단계 — 소규모 가공
-- 원유 채굴 + 보크사이트 채굴 + 구리광석 채굴 해금
-- 나프타 → 폴리머 체인, 알루미늄 체인, 구리 체인 시작
+- 철광석 + 원유 + 보크사이트 채굴 해금
+- 철광 체인(선철→강철판), 석유 체인, 알루미늄 체인 시작
+- 광차(강철판+구리선) + 착암기(강철판+전선다발) 제작 가능
 - 첫 크로스 조합 등장 (복합 소재 패널)
-- **해금:** 정유 설비, 알루미늄 제련소
+- **해금:** 용광로, 정유 설비, 알루미늄 제련소
 
 ### 3단계 — 전기화 + ★ 티어1 프레스티지 (소규모 공장)
 - 구리 → 전선 다발 → 전기 장치, 석유 → 케이스, 철광 → 공장설비 체인 완성
+- 트럭(복합소재패널+전기장치) + 굴착기(복합소재패널+스마트기계) 제작 가능
 - 스마트 기계, 첨단 작업대 크로스 조합 등장
 - **소규모 공장 조합** → 첫 프레스티지 가능 (IP 1~3 획득)
 - **여러 번 반복하며 IP 누적** → IP 샵에서 영구 강화 구매
@@ -585,6 +936,98 @@
 
 ---
 
+## 7-1. 튜토리얼 (신규 플레이어 가이드)
+
+> 첫 플레이 시 자연스럽게 게임 메커니즘을 학습하는 가이드 퀘스트 체인.  
+> 완료하면 소량의 💎 보상을 지급하여 첫 가챠 뽑기까지 유도.
+
+### 가이드 퀘스트 체인
+
+| # | 퀘스트 | 완료 조건 | 보상 | 학습 목표 |
+|---|--------|----------|------|----------|
+| 1 | 🪵 첫 수확 | 산 #1 탭하여 원목 3개 획득 | — | 수동 채굴 (탭) |
+| 2 | 🔨 첫 가공 | 원목 → 목재 제작 1회 | — | 생산 체인 |
+| 3 | ⛏️ 금속 가공 | 구리광석 → 동괴 제작 1회 | — | 제련 개념 |
+| 4 | 🛒 손수레 제작 | 이동수단 Lv.1 업그레이드 | 10💎 | 이동수단 업그레이드 |
+| 5 | ⛏️ 곡괭이 제작 | 채굴도구 Lv.1 업그레이드 | 10💎 | 채굴도구 업그레이드 |
+| 6 | 🚀 새로운 땅 | 2단계 진입 | 20💎 | 단계 전환 체험 |
+
+> 총 보상: 💎40 (단일 가챠 뽑기 가능 — 첫 작업자 획득 유도)
+
+### 튜토리얼 동작 규칙
+
+| 항목 | 내용 |
+|------|------|
+| 표시 방식 | 화면 하단 배너 + 해당 UI 요소 펄스 하이라이트 |
+| 건너뛰기 | "건너뛰기" 버튼으로 즉시 완료 가능 |
+| 재시작 | 설정 화면에서 "튜토리얼 다시 보기" 가능 |
+| 프레스티지 후 | 재표시하지 않음 (완료 상태 영구 보존) |
+| 저장 | `tutorialStep` (현재 진행 중인 퀘스트 번호), `tutorialComplete` (완료 여부) |
+
+---
+
+## 7-2. 업적 시스템 (Achievements)
+
+> 장기 목표를 제시하여 플레이어의 지속적인 동기를 부여하고, 💎 보상으로 가챠 자원을 공급.
+
+### 업적 카테고리
+
+| 카테고리 | 업적 예시 | 조건 | 보상 |
+|---------|---------|------|------|
+| ⛏️ 채굴 | 초보 광부 / 숙련 광부 / 전설의 광부 / 광산왕 | 원자재 100 / 1K / 10K / 100K개 채취 | 5 / 10 / 20 / 50💎 |
+| 🔨 생산 | 견습 장인 / 생산의 달인 / 첫 크로스! / 크로스 마스터 | 제품 50 / 500 / 크로스 첫 완성 / 크로스 10종 완성 | 5 / 10 / 15 / 30💎 |
+| ⭐ 프레스티지 | 첫 매각 / 연속 매각 / 프레스티지 마스터 | 프레스티지 1 / 5 / 10회 | 20 / 50 / 100💎 |
+| 👷 작업자 | 첫 동료 / 팀 빌딩 / 드림팀 / 전설의 일꾼 | 작업자 1 / 10 / 30명 보유 / 전설 Lv.Max | 5 / 10 / 30 / 100💎 |
+| 🏔️ 탐험 | 탐험가 / 산악인 / 정복자 | 산 5 / 10 / 15개 해금 | 10 / 30 / 50💎 |
+| 🛣️ 도로 | 길 닦기 / 철도왕 / 고속도로 건설 | 자갈길 / 레일 / 고속도로 건설 | 5 / 10 / 30💎 |
+| ⭐ 숙련 | 반복의 힘 / 장인의 경지 / 달인 / 그랜드마스터 | 숙련도 Lv.5 / 10 / 15 / 20 달성 | 10 / 20 / 30 / 50💎 |
+
+### 업적 시스템 규칙
+
+| 항목 | 내용 |
+|------|------|
+| 총 업적 수 | ~50개 |
+| 총 💎 보상 | ~1,500💎 |
+| 진행률 표시 | 각 업적에 게이지바 (현재/목표) |
+| 달성 알림 | 토스트 팝업 (화면 상단, 3초 표시) |
+| UI | 업적 화면 (카테고리별 탭 필터) |
+| 프레스티지 | 업적 진행률 **영구 보존** (리셋 안 됨) |
+| 누적 기준 | 모든 런의 합산 (프레스티지 횟수 포함) |
+
+---
+
+## 7-3. 일일 퀘스트 (Daily Quests)
+
+> 매일 새로운 목표를 제시하여 일일 접속 동기를 부여하고, 💎 보상을 안정적으로 공급.
+
+### 일일 퀘스트 메커니즘
+
+| 항목 | 내용 |
+|------|------|
+| 리셋 시점 | 매일 00:00 (로컬 시간) |
+| 퀘스트 수 | 3개 (풀에서 랜덤 선택, 중복 없음) |
+| 개별 보상 | 퀘스트별 3~8💎 |
+| 전체 완료 보너스 | 10💎 (3개 모두 완료 시 추가) |
+| 프레스티지 | 당일 진행률 유지 (프레스티지해도 당일 퀘스트 초기화 안 됨) |
+
+### 퀘스트 풀
+
+| 퀘스트 | 조건 | 보상 |
+|--------|------|------|
+| 부지런한 광부 | 원자재 500개 채취 | 5💎 |
+| 생산의 달인 | 레시피 10개 완성 | 5💎 |
+| 탭 마스터 | 수동 채굴 20회 | 3💎 |
+| 크로스 장인 | 크로스 조합 2개 완성 | 8💎 |
+| 인사 배치 | 작업자 배치 변경 3회 | 3💎 |
+| 속도광 | 배속 부스트 1회 사용 (광고) | 3💎 |
+| 업그레이드 | 업그레이드 1회 적용 | 5💎 |
+| 도로 공사 | 도로 1회 업그레이드 | 5💎 |
+| 장인의 반복 | 같은 레시피 5회 반복 생산 | 5💎 |
+
+> 풀에서 3개를 매일 랜덤 선택. 향후 이벤트/시즌별 한정 퀘스트 추가 가능.
+
+---
+
 ## 8. React Native 프로젝트 구조
 
 ```
@@ -602,12 +1045,17 @@ src/
 ├── data/
 │   ├── resources.ts          ← 자원 정의
 │   ├── recipes.ts            ← 생산 레시피 정의
+│   ├── mountains.ts          ← 산 정의 (15개 산, 자원 분포, 이름 생성)
 │   ├── upgrades.ts           ← 일반 업그레이드 정의
 │   ├── ipUpgrades.ts         ← IP 영구 업그레이드 정의
 │   ├── workers.ts            ← 작업자 등급/능력 정의 + 가챠 확률표
 │   ├── mastery.ts            ← 숙련도 레벨 테이블 / 보너스 정의 / 마일스톤
 │   ├── scaling.ts            ← 난이도 스케일링 계수 정의
-│   └── stages.ts             ← 진행 단계 / 해금 조건 정의
+│   ├── stages.ts             ← 진행 단계 / 해금 조건 정의
+│   ├── roads.ts              ← 도로 등급 / 속도 배율 / 비용 정의
+│   ├── tutorial.ts           ← 튜토리얼 퀘스트 정의
+│   ├── achievements.ts       ← 업적 정의 (~50개)
+│   └── dailyQuests.ts        ← 일일 퀘스트 풀 정의
 ├── store/
 │   ├── gameStore.ts          ← Zustand 전역 상태
 │   └── saveStore.ts          ← AsyncStorage 저장/로드
@@ -617,7 +1065,9 @@ src/
 │   ├── UpgradeScreen.tsx     ← 업그레이드 목록
 │   ├── PrestigeScreen.tsx    ← 프레스티지 + IP 상점
 │   ├── FactoryScreen.tsx     ← 공장 현황 / 픽셀 맵
-│   └── WorkerScreen.tsx      ← 작업자 보관함 / 배치 / 가챠 뽑기
+│   ├── WorkerScreen.tsx      ← 작업자 보관함 / 배치 / 가챠 뽑기
+│   ├── AchievementScreen.tsx ← 업적 목록 / 카테고리별 필터
+│   └── DailyQuestScreen.tsx  ← 일일 퀘스트 목록 / 진행률
 ├── components/
 │   ├── ResourceBar.tsx
 │   ├── RecipeCard.tsx
@@ -645,8 +1095,11 @@ src/
 | 상태 관리 | zustand | v5 |
 | 저장 | @react-native-async-storage/async-storage | latest |
 | 애니메이션 | react-native-reanimated | v3 |
+| SVG 연결선/도로 | react-native-svg | Phase 1 |
+| 2D Canvas (채굴맵) | @shopify/react-native-skia | Phase 2 (v1.5) |
 | 네비게이션 | expo-router | v4 |
 | 픽셀 스프라이트 | expo-image (PNG 스프라이트) | latest |
+| 제스처 (pan/zoom) | react-native-gesture-handler | Expo SDK 포함 |
 | 큰 숫자 | break-infinity.js | latest |
 | 경로 alias | babel-plugin-module-resolver | latest |
 | 광고 | react-native-google-mobile-ads | Phase 3 |
@@ -656,7 +1109,7 @@ src/
 | 스플래시 | expo-splash-screen | latest |
 | 빌드 | eas-cli | latest |
 
-> Phase 1에서는 상단 7개만 설치. 광고/알림/분석/IAP는 Phase 3에서 추가.
+> Phase 1에서는 상태관리~경로alias까지 8개 + react-native-svg 설치 (총 9개). @shopify/react-native-skia는 Phase 2(v1.5)에서 추가. 광고/알림/분석/IAP는 Phase 3에서 추가.
 
 ---
 
@@ -685,11 +1138,11 @@ Lint/format: ESLint flat config + Prettier (format on save).
 
 Phase 1 packages only:
   zustand (v5), @react-native-async-storage/async-storage,
-  react-native-reanimated (v3), expo-router (v4),
+  react-native-reanimated (v3), react-native-svg, expo-router (v4),
   break-infinity.js, expo-splash-screen, expo-image,
   babel-plugin-module-resolver
 
-(Do NOT install ads/notifications/analytics/IAP yet — Phase 3.)
+(Do NOT install @shopify/react-native-skia yet — Phase 2 (v1.5). Do NOT install ads/notifications/analytics/IAP yet — Phase 3.)
 
 Create the initial app layout with expo-router file-based routing and a bottom tab navigator with 6 tabs:
   채취(Mine), 생산(Produce), 업그레이드(Upgrade), 공장(Factory), 작업자(Worker), 프레스티지(Prestige)
@@ -719,19 +1172,19 @@ Define ResourceDefinition type: {
 
 Resources (10 chains):
 
-목재 체인:
+목재 체인 (1단계):
 원목(log), 목재(lumber), 합판(plywood), 가구부품(furniture_part), 책상(desk)
 
-철광 체인:
-철광석(iron_ore), 선철(pig_iron), 강철판(steel_plate), 철골프레임(steel_frame), 공장설비(factory_unit)
-
-석유 체인:
-원유(crude_oil), 나프타(naphtha), 폴리머(polymer), 플라스틱소재(plastic), 케이스(case)
-
-구리 체인:
+구리 체인 (1단계):
 구리광석(copper_ore), 동괴(copper_ingot), 구리선(copper_wire), 전선다발(wire_bundle), 전기장치(electric_unit)
 
-알루미늄 체인:
+철광 체인 (2단계):
+철광석(iron_ore), 선철(pig_iron), 강철판(steel_plate), 철골프레임(steel_frame), 공장설비(factory_unit)
+
+석유 체인 (2단계):
+원유(crude_oil), 나프타(naphtha), 폴리머(polymer), 플라스틱소재(plastic), 케이스(case)
+
+알루미늄 체인 (2단계):
 보크사이트(bauxite), 알루미나(alumina), 알루미늄판재(aluminum_plate), 경량프레임(light_frame), 항공부품(aviation_part)
 
 실리콘 체인:
@@ -775,6 +1228,49 @@ Prestige items:
 - ★★ 산업단지(industrial_complex) = 스마트기계 + 첨단작업대 + 소규모공장 (5단계)
 - ★★★ 미래도시(future_city) = 스마트시티모듈 + 무한에너지코어 + 산업단지 (8단계)
 Duration scales: raw→p1: 5s, p1→p2: 15s, p2→part: 30s, part→final: 60s, cross basic: 90s, cross mid: 180s, cross final: 300s
+
+3. src/data/mountains.ts
+Define MountainDefinition type: {
+  id: string,              // mountain_1, mountain_2, ...
+  index: number,           // 1-15 (display order, also determines distance)
+  resources: ResourceId[], // 1~3 raw resources available at this mountain
+  unlockedAtStage: number, // stage when this mountain becomes available
+  baseRoundTripSec: number // base travel time (increases with distance)
+}
+
+Mountains (15 total, IPM overlapping resource distribution):
+  #1:  [log]                             stage:1  trip:2.0s
+  #2:  [log, copper_ore]                  stage:1  trip:2.5s
+  #3:  [log, copper_ore, iron_ore]        stage:2  trip:3.0s
+  #4:  [copper_ore, iron_ore]             stage:2  trip:3.5s
+  #5:  [iron_ore, crude_oil]              stage:2  trip:4.0s
+  #6:  [iron_ore, crude_oil, bauxite]     stage:2  trip:4.5s
+  #7:  [crude_oil, bauxite]               stage:3  trip:5.0s
+  #8:  [bauxite, quartz]                  stage:4  trip:5.5s
+  #9:  [bauxite, quartz, lithium_ore]     stage:4  trip:6.0s
+  #10: [quartz, lithium_ore]              stage:4  trip:6.5s
+  #11: [lithium_ore, gold_ore]            stage:4  trip:7.0s
+  #12: [gold_ore, rare_earth_ore]         stage:5  trip:8.0s
+  #13: [gold_ore, rare_earth_ore, uranium_ore] stage:6 trip:9.0s
+  #14: [rare_earth_ore, uranium_ore]      stage:6  trip:10.0s
+  #15: [uranium_ore]                      stage:6  trip:11.0s
+
+Mountain name generation:
+  Define MOUNTAIN_NAME_PREFIXES: string[] = [
+    '청','백','금','적','흑','은','녹','철','수','화',
+    '운','용','호','봉','월','성','천','옥','자','비'
+  ]
+  Define MOUNTAIN_NAME_SUFFIXES: string[] = [
+    '봉산','악산','령','봉','골산','암산','대산','운산','정산','광산'
+  ]
+  Export generateMountainNames(count: number): string[]
+    → shuffle prefixes, pick `count` unique, pair with random suffix
+    → e.g. ['청봉산','백운령','금악산','적대산',...]
+
+Also export:
+  - MOUNTAINS: MountainDefinition[] (all 15)
+  - mountainById: Record<string, MountainDefinition>
+  - getMountainsAtStage(stage: number): MountainDefinition[]
 ```
 
 ---
@@ -796,10 +1292,17 @@ Duration scales: raw→p1: 5s, p1→p2: 15s, p2→part: 30s, part→final: 60s, 
   - activeRecipes: { recipeId, endTime: number, slot: number }[] (endTime = Date.now() + scaledDurationMs)
   - upgrades: Record<upgradeId, number>
   - workers: Worker[] (all owned workers)
-    Worker: { id: string, grade: 'N'|'R'|'U'|'L', abilities: { type: 'yield'|'speed'|'power', multiplier: number }[], level: number, dupeCount: number, locked: boolean }
-  - workerAssignments: Record<rawResourceId, workerId | null> (10 slots)
+    Worker: { id: string, name: string, grade: 'N'|'R'|'U'|'L', abilities: { type: 'yield'|'speed'|'power', multiplier: number }[], level: number, dupeCount: number, locked: boolean }
+  - workerAssignments: Record<mountainId, workerId | null> (15 slots — 산 단위 배치)
+  - mountainNames: string[] (랜덤 생성된 15개 산 이름, 프레스티지에도 보존)
   - gachaPity: number (pity counter for legendary guarantee)
   - mastery: Record<recipeId, { level: number, xp: number }> (production mastery, survives resets)
+  - roadLevel: number (0-4, current road upgrade level, resets on prestige)
+  - tutorialStep: number (current tutorial quest, 0 = not started, 7 = complete)
+  - tutorialComplete: boolean (true after all tutorial quests done, survives prestige)
+  - achievements: Record<achievementId, boolean> (unlocked achievements, survives resets)
+  - dailyQuests: { questId: string, progress: number, target: number, completed: boolean }[] (3 active daily quests)
+  - dailyQuestDate: string (ISO date of last daily quest refresh)
   - totalPrestigeCount: number (total prestiges across all tiers, used for difficulty scaling)
   - highestStageThisRun: number (highest stage reached in current run, resets on prestige, used for IP calculation)
   - stage: number (1-8)
@@ -825,13 +1328,27 @@ Duration scales: raw→p1: 5s, p1→p2: 15s, p2→part: 30s, part→final: 60s, 
   - getMaxProductionSlots() → return 2 + upgrades['workbench'] + ipUpgrades['slot_expansion'] (additive stacking)
   - getMaxOfflineHours() → return 8 + (upgrades['automation'] × 2) + (ipUpgrades['offline_boost'] × 2), cap at 24
   - pullGacha(type: 'single'|'ten') → deduct diamonds, generate workers, update pity
-  - assignWorker(rawResourceId, workerId) → place worker on mining slot
-  - unassignWorker(rawResourceId) → remove worker from slot
+  - assignWorker(mountainId, workerId) → place worker on mountain mining slot
+  - unassignWorker(mountainId) → remove worker from mountain slot
+  - getMiningYield(mountainId) → return per-trip yield for each resource in mountain
+      = baseYield(1) × transportCargo(이동수단 적재량) × miningToolYield(채굴도구 배율) × ipMiningBoost × workerYield
+  - getMiningCycleMs(mountainId) → return round-trip ms for mountain
+      = baseRoundTripSec × 1000 / (transportSpeed(이동수단 속도) × roadSpeed(도로 속도) × ipMiningSpeed × workerSpeed)
+  - getTransportLevel() → return current transport upgrade level (0=도보, 1=손수레, 2=광차, 3=트럭, 4=자율주행)
+  - getMiningToolLevel() → return current mining tool upgrade level (0=맨손, 1=곡괭이, 2=착암기, 3=굴착기, 4=양자드릴)
+  - getRoadLevel() → return current road upgrade level (0=오솔길, 1=자갈길, 2=레일, 3=포장도로, 4=고속도로)
+  - upgradeRoad() → deduct road materials, increment roadLevel
+  - tapMine(mountainId) → instant 1 trip completion (cooldown 5s per mountain), combo multiplier for consecutive different mountain taps
   - recycleWorker(workerId) → convert to diamonds (N:1, R:5, U:15, L:50)
   - feedDuplicateWorker(targetId, feedId) → merge duplicate for level up
   - addMasteryXp(recipeId, xp) → gain XP, check level up, apply bonuses
   - getScaledCost(recipeId) → return adjusted cost based on prestige count + stage
   - getScaledDuration(recipeId) → return adjusted duration (scaling ÷ mastery reduction)
+  - advanceTutorial(step) → mark tutorial step complete, grant reward if applicable
+  - unlockAchievement(achievementId) → mark achievement as unlocked, grant 💎 reward
+  - completeDailyQuest(questIndex) → mark daily quest complete, grant 💎 reward
+  - refreshDailyQuests() → if dailyQuestDate != today, generate 3 new random quests from pool
+  - checkDailyQuestProgress(eventType, amount) → update matching quest progress
 
   Use AsyncStorage for persistence. Save on every state change (debounced 2s).
 ```
@@ -845,26 +1362,33 @@ Create src/engine/GameLoop.ts for RawWorks.
 
 Requirements:
 - setInterval every 250ms (heartbeat, NOT 1-second tick)
-- Maintain per-resource ms accumulators: Record<rawResourceId, number>
+- Maintain per-mountain ms accumulators: Record<mountainId, number>
 - On each heartbeat (deltaMs = Date.now() - lastHeartbeat):
-  1. Auto-mining: for each unlocked raw resource:
-     a. accumulator[resourceId] += deltaMs
-     b. effectiveTickMs = baseTickMs / workerSpeedMult (e.g. 1000ms / 1.2 = 833ms)
-     c. while accumulator[resourceId] >= effectiveTickMs:
-        - accumulator[resourceId] -= effectiveTickMs
-        - amount = baseRate × miningUpgradeMultiplier × workerYieldMult
-        - addResource(resourceId, amount)
-        - roll workerPowerChance → if success, add 1 unit of random same-stage raw resource (excluding self)
+  1. Mountain mining: for each unlocked mountain (based on current stage):
+     a. accumulator[mountainId] += deltaMs
+     b. effectiveCycleMs = getMiningCycleMs(mountainId)
+        = mountain.baseRoundTripSec × 1000 / (transportSpeed × roadSpeed × ipMiningSpeedMult × workerSpeedMult)
+     c. while accumulator[mountainId] >= effectiveCycleMs:
+        - accumulator[mountainId] -= effectiveCycleMs
+        - for each resourceId in mountain.resources:
+            amount = getMiningYield(mountainId)
+              = 1 × transportCargo × miningToolYieldMult × ipMiningMult × workerYieldMult
+            addResource(resourceId, amount)
+        - roll workerPowerChance → if success, add 1 unit of random resource from same-stage unlock pool (excluding self)
   2. Check active recipes: if Date.now() >= recipe.endTime → completeRecipe()
      On complete: addMasteryXp(recipeId, XP), apply mastery yieldBonus + criticalChance to output
      If mastery autoRepeat enabled + resources available → auto-restart (set new endTime)
   3. Auto-complete conveyor belt recipes (if conveyor upgrade active)
   4. Update highestStageThisRun = max(highestStageThisRun, stage)
+  5. Check achievement conditions (resource totals, stage, prestige count, etc.)
+  6. Check daily quest progress (resource earned, recipes completed, taps, etc.)
+  7. Check tutorial step completion conditions
 - AppState listener:
   - background: save Date.now() as lastBackgroundTime to AsyncStorage
   - foreground: call OfflineEngine.calculate()
 - Export: startLoop(), stopLoop()
 - Use gameStore actions for all state changes
+- On first launch: generate mountainNames via generateMountainNames(15) and persist to store
 ```
 
 ---
@@ -881,7 +1405,10 @@ Logic:
      (= (8 + automation_upgrade_level×2 + ip_offline_boost_level×2) × 3600, cap 24h)
   3. elapsedSec = Math.min((Date.now() - lastBackgroundTime) / 1000, maxOfflineSec)
   4. Calculate earned resources:
-     - Auto-mining resources × elapsedSec × miningRate × workerYieldMultiplier
+     - For each unlocked mountain:
+         cycles = floor(elapsedSec / (getMiningCycleMs(mountainId) / 1000))
+         for each resourceId in mountain.resources:
+           earned += cycles × getMiningYield(mountainId)
      - Completed recipe cycles (floor(elapsedSec / getScaledDuration(recipe))) for each active recipe slot
      - Apply mastery yieldBonus to recipe outputs
      - If IP upgrade '자동 크로스' purchased: also process cross-chain recipe slots offline
@@ -901,21 +1428,56 @@ Logic:
 ```
 Create src/screens/MainScreen.tsx for RawWorks (pixel art idle game).
 
-UI layout:
-- Header: game title + prestige count + stage badge
-- Resource grid (2 columns): show all unlocked resources with emoji icon, name, amount
-  - Amount formatted: use bigNumber util (1234 → "1.2K", 1000000 → "1M")
-  - Highlight resources currently being produced (pulse animation)
-- Mining section: tap button for each unlocked raw resource
-  (↳ each mining slot shows assigned worker portrait + grade border if present)
-  (1단계: 원목, 철광석 / 2단계: 원유, 보크사이트, 구리광석 / 4단계: 석영, 리튬광석, 금광석 / 5단계: 희토류광석 / 6단계: 우라늄광석)
-  with auto-mining rate display (e.g. "자동: +2.5/s 📦×1.4")
-  → tap worker icon to open quick-assign from WorkerScreen
-- 💎 Diamond balance display (top-right corner)
+UI layout (IPM 스타일 방사형 산악 채굴 화면):
+
+- Header (top bar):
+  - 좌상단: 자원 요약 (주요 자원 4~6개 수량, bigNumber 포맷)
+  - 우상단: 💎 다이아 잔액 + ⚙️ 설정 버튼
+
+- 중앙 방사형 채굴 뷰 (핵심 화면):
+  - 화면 중앙: 🏭 기지 (공장 아이콘, 픽셀 아트)
+  - 기지 주변 360°에 해금된 산들을 원형 배치 (IPM 행성 배치와 동일)
+  - 각 산: ⛰️ 아이콘 + 랜덤 산 이름 + 자원 아이콘들 (1~3개)
+  - 기지 ↔ 산 사이에 연결선 (**도로 등급에 따라 스타일 변경**: 점선→자갈→레일→포장→고속도로) — `react-native-svg`
+  - **이동수단 진화 애니메이션 (MVP)**: 이동수단 레벨에 따라 이모지 아이콘이 SVG 연결선 위 왕복
+    - Lv.0 도보: 🚶 아이콘 translateX/Y 왕복
+    - Lv.1 손수레: 🛒 아이콘 translateX/Y 왕복
+    - Lv.2 광차: ⛏️ 아이콘 translateX/Y 왕복
+    - Lv.3 트럭: 🚛 아이콘 translateX/Y 왕복
+    - Lv.4 자율주행: 🤖 아이콘 translateX/Y 왕복
+    (react-native-reanimated `withRepeat(withTiming)` — 산당 1개 SharedValue)
+  - **v1.5 업그레이드**: @shopify/react-native-skia Canvas로 채굴맵 영역 교체 → 스프라이트 시트 + 파티클 + 경로 애니메이션
+  - 이동수단이 기지에 도착할 때마다 자원 획득 텍스트 팝업 "+1 🪵 +1 ⛏️" (`reanimated fadeIn+translateY`) (MVP) → 파티클 이펙트 (v1.5)
+  - 현재 이동수단 레벨 표시 배지 (기지 아이콘 옆)
+  - **산 탭 = 수동 채굴**: 산 탭 시 즉시 1회 왕복 완료 (자원 즉시 획득, 쿨다운 5초/산)
+    - 5초 내 다른 산 연속 탭 시 콤보: ×1.5 → ×2.0 → ×3.0 (최대)
+    - 콤보 게이지 UI (화면 중앙 상단)
+  - 산 길게 누르기 시 바텀시트 팝업:
+    - 산 이름 + 자원 목록 + 현재 채굴 속도
+    - 배치된 작업자 표시 (등급 테두리 + 능력치)
+    - "작업자 배치/교체" 버튼 → WorkerScreen 연동
+  - 미해금 산은 반투명 + 🔒 아이콘 + "N단계 해금" 텍스트
+
+- 우측 사이드 버튼:
+  - x1.2 배속 버튼 (광고 시청 보상)
+  - 📋 일일 퀘스트 바로가기 (진행률 뱃지)
+  - 🏆 업적 바로가기 (신규 달성 뱃지)
+  - 📈 통계 바로가기
+  - 🏭 프레스티지 바로가기
+
+- 튜토리얼 오버레이:
+  - 첫 플레이 시 가이드 퀘스트 배너 (하단 고정)
+  - 해당 UI 요소 펄스 하이라이트 + 안내 화살표
+  - "건너뛰기" 버튼
+
 - Bottom: offline earnings banner if available
 
-Style: dark industrial theme, monospace font for numbers, pixel-art feel.
-Use react-native-reanimated for number change animations.
+Style: dark space/industrial theme (배경 #1a1a2e, IPM과 유사한 어두운 우주/산악 배경),
+       monospace font for numbers, pixel-art mountain sprites.
+Use react-native-reanimated for icon transport animations + number change animations.
+Use react-native-svg for road connection lines (strokeDasharray per road level).
+Note: v1.5에서 채굴맵 영역을 @shopify/react-native-skia Canvas로 교체 예정 (스프라이트+파티클).
+Pan/zoom gesture for the mountain map (react-native-gesture-handler).
 ```
 
 ---
@@ -953,26 +1515,44 @@ Create upgrade system for RawWorks:
 Define Upgrade type: { id, nameKo, tiers: { level, cost: {resourceId, amount}[], effect }[], category: 'mining'|'smelting'|'automation'|'facility'|'research' }
 
 Upgrades:
-- 채굴도구: 곡괭이(Lv1) → 착암기(Lv2) → 굴착기(Lv3) → 양자드릴(Lv4)
-  cost: 강철판×5 → 철골프레임×3 → 복합소재패널×2 → AI컴퓨팅유닛×1
-  effect: miningRate ×1.5 per level
-- 제련설비: 용광로(Lv1) → 전기로(Lv2) → 아크로(Lv3) → 플라즈마로(Lv4)
-  cost: 선철×10 → 전선다발×5 → 발전기코어×2 → 원자로모듈×1
+- 이동수단 (transport): 도보(Lv0) → 손수레(Lv1) → 광차(Lv2) → 트럭(Lv3) → 자율주행트럭(Lv4)
+  cost: — → 목재×5+동괴×3 → 강철판×3+구리선×5+목재×10 → 복합소재패널×3+전기장치×2+폴리머×5 → 전기차유닛×1+AI컴퓨팅유닛×1
+  effect: transportSpeed [×1.0, ×1.5, ×2.0, ×3.0, ×4.5] + transportCargo [1, 2, 3, 4, 6]
+  category: 'transport'
+- 채굴도구 (mining_tool): 맨손(Lv0) → 곡괭이(Lv1) → 착암기(Lv2) → 굴착기(Lv3) → 양자드릴(Lv4)
+  cost: — → 목재×3+동괴×5 → 강철판×5+전선다발×3 → 복합소재패널×2+스마트기계×1 → AI컴퓨팅유닛×1+원자로모듈×1
+  effect: miningYield [×1.0, ×1.5, ×2.0, ×3.0, ×4.0]
+  category: 'mining'
+- 제련설비 (smelting): 용광로(Lv1) → 전기로(Lv2) → 아크로(Lv3) → 플라즈마로(Lv4)
+  cost: 동괴×10+전선다발×5 → 강철판×5+구리선×3 → 발전기코어×2 → 원자로모듈×1
   effect: smeltingTime ×0.7 per level
-- 자동화: 수동(Lv0) → 컨베이어(Lv1) → 로봇팔(Lv2) → AI라인(Lv3)
-  cost: 스마트기계×1 → 플라스틱소재×10 → 고급회로보드×2 → AI컴퓨팅유닛×1
+  category: 'smelting'
+- 자동화 (automation): 수동(Lv0) → 컨베이어(Lv1) → 로봇팔(Lv2) → AI라인(Lv3)
+  cost: 스마트기계×1+플라스틱소재×10 → 고급회로보드×2 → AI컴퓨팅유닛×1
   effect: offlineMaxHours +2 per level
-- 작업대: 목재(Lv1) → 철제(Lv2) → 첨단(Lv3) → 나노(Lv4)
-  cost: 가구부품×5 → 전기장치×3 → 고급회로보드×1 → 마이크로프로세서×2
+  category: 'automation'
+- 작업대 (workbench): 목재(Lv1) → 철제(Lv2) → 첨단(Lv3) → 나노(Lv4)
+  cost: 가구부품×5+전기장치×3 → 고급회로보드×1 → 마이크로프로세서×2
   effect: productionSlots +1 per level
-- 시설규모: 소규모(Lv1) → 공장(Lv2) → 산업단지(Lv3) → 미래도시(Lv4)
-  cost: 공장설비×1 → 복합소재패널×5 → 스마트시티모듈×1 → 미래도시×1
-  effect: miningSlots +1 per level
-- 연구소: Lv1 = 스마트기계+책상, Lv2 = 고급회로보드+정밀전자장치
+  category: 'facility'
+- 연구소 (research): Lv1 = 스마트기계+책상, Lv2 = 고급회로보드+정밀전자장치
   effect: Lv1 = stage 3→4 transition condition + unlock stages 4+, Lv2 = stage 5→6 transition condition + unlock stages 6+
   (연구소 업그레이드를 적용하면 단계 전환도 동시에 수행됨)
-- 에너지그리드: 발전기코어+에너지저장장치
+  category: 'research'
+- 에너지그리드 (energy_grid): 발전기코어+에너지저장장치
   effect: globalProductionSpeed ×1.5
+  category: 'facility'
+- 도로 (road): 오솔길(Lv0) → 자갈길(Lv1) → 레일(Lv2) → 포장도로(Lv3) → 고속도로(Lv4)
+  cost: — → 목재×10+합판×5 → 강철판×5+목재×15 → 복합소재패널×5+폴리머×10+강철판×10 → 스마트기계×2+고급회로보드×1+경량프레임×10
+  effect: roadSpeed [×1.0, ×1.2, ×1.5, ×2.0, ×2.5] (global, all mountains)
+  category: 'road'
+
+Transport + MiningTool + Road orthogonal roles:
+  - transport: affects trip speed (transportSpeed) and cargo capacity (transportCargo)
+  - mining_tool: affects dig yield multiplier only (miningYield)
+  - road: affects global trip speed multiplier (roadSpeed) — applies to all mountains
+  - Final yield = transportCargo × miningYield × ipBoost × workerYield
+  - Final speed = baseTrip / (transportSpeed × roadSpeed × ipSpeed × workerSpeed)
 
 Slot stacking rule:
   maxProductionSlots = 2 (base) + workbench_upgrade_level + ip_slot_expansion_level
@@ -981,6 +1561,12 @@ Slot stacking rule:
 2. src/data/stages.ts
 Define Stage type: { id, nameKo, unlocksResources: resourceId[], unlocksRecipes: recipeId[], requiredUpgrades?: upgradeId[] }
 Create stages 1-8 with their unlock conditions matching GDD section 7.
+Note: Stage 1→2 transition condition = transport Lv.1 (손수레) + mining_tool Lv.1 (곡괭이) both crafted.
+Stage 3→4 = research Lv.1 upgrade applied. Stage 5→6 = research Lv.2 upgrade applied.
+
+4. src/data/roads.ts
+Define RoadDefinition type: { level: number, nameKo: string, emoji: string, speedMultiplier: number, cost: {resourceId, amount}[], unlockedAtStage: number }
+Create road levels 0-4 matching GDD section 2-1 도로 건설 시스템.
 
 3. src/screens/UpgradeScreen.tsx
 UI:
@@ -1010,7 +1596,7 @@ Create prestige system for RawWorks:
   3. Increment gameStore.prestigeCount[tier] and gameStore.totalPrestigeCount
   4. Reset: resources → 0 (or startingAmount if IP upgrade bought), upgrades → 0, activeRecipes → []
   5. Reset: highestStageThisRun → 1, stage → 1
-  6. Keep: industryPoints, ipUpgrades, mastery, workers, workerAssignments, diamonds, gachaPity, prestigeTier, prestigeItems (separate preserved state)
+  6. Keep: industryPoints, ipUpgrades, mastery, workers, workerAssignments, diamonds, gachaPity, prestigeTier, prestigeItems, **mountainNames** (separate preserved state)
   7. Apply IP upgrade bonuses (startResources, etc.)
 
 2. src/data/ipUpgrades.ts
@@ -1321,7 +1907,19 @@ Level up (duplicate merge):
 Worker ability descriptions (for UI):
   yield: "틱당 채취 수량 ×{multiplier} 증가"
   speed: "자동 채취 간격 ×{1/multiplier} 감소"
-  power: "채굴 시 인접 체인 원자재 {(multiplier-1)*100}% 확률 추가 획득"
+  power: "채굴 시 같은 단계 해금 풀 원자재 {(multiplier-1)*100}% 확률 추가 획득"
+
+Worker name generation:
+  FAMILY_NAMES (20): ['김','이','박','최','정','강','조','윤','장','임','한','오','서','신','권','황','안','송','류','홍']
+  GIVEN_NAMES (30): ['철수','영희','민수','지은','동혁','수진','현우','소연','준호','미래','태양','은하','별','하늘','바다','새벽','솔','담','빛','샘','한울','아름','다솜','가람','나래','누리','온','한','슬','찬']
+  generateWorkerName(): string → random FAMILY_NAME + ' ' + random GIVEN_NAME
+  (600 combinations, duplicates allowed)
+
+Worker appearance (pixel art):
+  N: 회색 작업복 + 헬멗
+  R: 파란 작업복 + 안전모
+  U: 보라 작업복 + 고글 + 장갑 + 반짝임 이펙트
+  L: 금색 슈트 + 왕관 + 망토 + 파티클 오라
 
 2. src/data/diamonds.ts
 Define DiamondSource: { id, nameKo, amount, frequency }
@@ -1344,10 +1942,11 @@ Create gacha and worker engines for RawWorks:
 
 1. src/engine/GachaEngine.ts
 - generateWorker(grade: WorkerGrade): Worker
-  1. Determine abilityCount from grade template (random between min~max)
-  2. Pick abilityCount types from ['yield','speed','power'] without replacement (random)
-  3. For each ability, roll multiplier within grade's multiplierRange (round to 1 decimal)
-  4. Return Worker { id: uuid, grade, abilities, level: 1, dupeCount: 0, locked: false }
+  1. Generate name: generateWorkerName() → random FAMILY_NAME + ' ' + random GIVEN_NAME
+  2. Determine abilityCount from grade template (random between min~max)
+  3. Pick abilityCount types from ['yield','speed','power'] without replacement (random)
+  4. For each ability, roll multiplier within grade's multiplierRange (round to 1 decimal)
+  5. Return Worker { id: uuid, name, grade, abilities, level: 1, dupeCount: 0, locked: false }
 
 - pullSingle(): Worker
   1. Check diamonds >= 50, deduct
@@ -1376,8 +1975,8 @@ Create gacha and worker engines for RawWorks:
   3. Remove feedId worker
 
 2. src/engine/WorkerEngine.ts
-- getMiningMultiplier(rawResourceId): { yieldMult, speedMult, powerChance }
-  1. Check workerAssignments[rawResourceId]
+- getMiningMultiplier(mountainId): { yieldMult, speedMult, powerChance }
+  1. Check workerAssignments[mountainId]
   2. If no worker → return { 1, 1, 0 }
   3. Aggregate worker's abilities:
      - yield ability → yieldMult
@@ -1385,14 +1984,14 @@ Create gacha and worker engines for RawWorks:
      - power ability → powerChance (% chance for bonus resource from same-stage pool)
   4. Return multipliers
 
-- applyWorkerBonus(rawResourceId, baseAmount, baseTickMs):
+- applyWorkerBonus(mountainId, baseAmount, baseTickMs):
   Get multipliers, return { finalAmount: baseAmount * yieldMult, finalTickMs: baseTickMs / speedMult, bonusDrop: random() < powerChance }
 
 - getBonusDropTarget(rawResourceId): resourceId
   1. Get the stage at which rawResourceId was unlocked
   2. Collect all other raw resources unlocked at the same stage
   3. Return random pick from that pool (excluding self)
-  Example: copper_ore (stage 2) → pool = [crude_oil, bauxite] → random pick
+  Example: copper_ore (stage 1) → pool = [log] → random pick
 
 - Integration with GameLoop.ts:
   On each mining tick per resource:
@@ -1427,7 +2026,8 @@ UI layout (3 sections):
 - Grid of WorkerCards (3 columns):
   Each card shows:
   - Grade border color (grey/blue/purple/gold)
-  - Worker pixel art portrait (procedurally tinted by grade)
+  - **Worker name** (e.g. "김 철수", "박 나래") — top of card
+  - Worker pixel art portrait (grade-specific appearance: N=회색작업복, R=파란작업복, U=보라+고글, L=금색슈트+왕관)
   - Level badge (Lv.1~Max)
   - Ability icons with multiplier values: 📦×1.3  ⚡×1.2  💪×1.5
   - Lock icon toggle (tap to lock/unlock)
@@ -1436,13 +2036,13 @@ UI layout (3 sections):
 - Duplicate merge: drag worker onto same-grade worker → merge animation → level up
 
 3. 배치 현황 섹션 (bottom)
-- 10 mining slots in 2×5 grid, each showing:
-  - Resource icon + name (원목, 철광석, ...)
+- 15 mountain slots in 3×5 grid, each showing:
+  - Mountain icon + name (⛰️ 청봉산, ...)
   - Assigned worker card (or empty "+" slot)
   - Active multiplier preview: "📦×1.3 ⚡×1.2"
   - Tap to unassign or swap worker
 - Total mining bonus summary: "전체 생산량 +42%, 속도 +18%"
-- Locked resources shown as greyed-out slots with stage requirement
+- Locked mountains shown as greyed-out slots with stage requirement
 ```
 
 ---
@@ -1557,6 +2157,54 @@ Define ScalingConfig:
 
 ---
 
-*Raw Works — GDD v2.8*  
+### Step 22 — 튜토리얼 + 업적 + 일일 퀘스트 시스템
+
+```
+Create tutorial, achievement, and daily quest systems for RawWorks:
+
+1. src/data/tutorial.ts
+Define TutorialQuest type: { step: number, nameKo: string, emoji: string, condition: string, reward: number (diamonds), targetAction: string }
+Create 6 tutorial quests matching GDD section 7-1:
+  Step 1: 첫 수확 (tap mountain #1, get 3 logs) → 0💎
+  Step 2: 첫 가공 (produce lumber ×1) → 0💎
+  Step 3: 금속 가공 (produce copper_ingot ×1) → 0💎
+  Step 4: 손수레 제작 (upgrade transport to Lv.1) → 10💎
+  Step 5: 곡괭이 제작 (upgrade mining_tool to Lv.1) → 10💎
+  Step 6: 새로운 땅 (reach stage 2) → 20💎
+
+2. src/data/achievements.ts
+Define Achievement type: { id: string, nameKo: string, category: string, condition: { type: string, target: number }, reward: number (diamonds) }
+Create ~50 achievements across 7 categories matching GDD section 7-2:
+  Categories: mining, production, prestige, worker, exploration, road, mastery
+  Total diamond reward: ~1500💎
+
+3. src/data/dailyQuests.ts
+Define DailyQuestTemplate type: { id: string, nameKo: string, conditionType: string, target: number, reward: number (diamonds) }
+Create quest pool (~9 templates) matching GDD section 7-3.
+Daily refresh logic: pick 3 random quests (no duplicates), bonus 10💎 for completing all 3.
+
+4. src/engine/TutorialEngine.ts
+- checkTutorialCondition(step): boolean → evaluate if current step condition is met
+- advanceTutorial(): void → mark current step complete, grant reward, advance to next step
+- isTutorialActive(): boolean → !tutorialComplete
+- getCurrentHighlight(): { screen, elementId } → return UI element to highlight for current step
+
+5. src/engine/AchievementEngine.ts
+- checkAllAchievements(): string[] → evaluate all achievement conditions, return newly unlocked IDs
+- getProgress(achievementId): { current: number, target: number } → current progress for UI gauge
+- Integration: call checkAllAchievements() on every state change that could trigger one
+  (resource gain, recipe complete, prestige, worker gain, stage unlock, road upgrade, mastery level up)
+
+6. src/engine/DailyQuestEngine.ts
+- refreshIfNeeded(): void → if date changed, generate 3 new quests from pool
+- updateProgress(eventType: string, amount: number): void → update matching quest progress
+- checkAllComplete(): boolean → if all 3 done, grant bonus 10💎
+- Integration: call updateProgress() from GameLoop on relevant events
+  (mining_tick, recipe_complete, tap_mine, worker_assign, upgrade_apply, ad_watch, etc.)
+```
+
+---
+
+*Raw Works — GDD v3.2*  
 *작성일: 2026년 4월*  
-*변경: v2.8 — 프롬프트 세트 기술 스택 확정 반영. 핵심 패키지 테이블에 버전+Phase 구분 추가. Step1: SDK52, expo-router v4, strict TS, 경로 alias, Phase 1 패키지만 설치, 폴더에 hooks·types·services 추가. Step2: ResourceDefinition에 isRaw·isPrestigeItem·tier 확장, RecipeDefinition에 kind·baseDurationSec, snake_case ID. Step3: zustand v5, save format version, 2초 디바운스, migration chain.*
+*변경: v3.2 — 검토 기반 9건 수정. (1) §5 부산물 예시 단계 오류 수정(철광석→2단계, 구리광석→1단계), (2) Step 18 WorkerEngine rawResourceId→mountainId 통일, (3) Step 19 배치 10슬롯→15산 슬롯, (4) §1 오타 '즐시'→'즉시', (5) Step 1 패키지에 react-native-svg 추가, (6) §8 패키지 설명 명확화, (7) §6-1 스케일링 공식 변수명 명확화(totalPrestigeCount, currentStage), (8) §8 패키지에 react-native-gesture-handler 추가, (9) §8 screens에 DailyQuestScreen 추가.*
