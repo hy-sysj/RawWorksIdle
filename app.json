@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "Raw Works",
+    "slug": "raw-works",
+    "scheme": "rawworks",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "plugins": ["expo-router"],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
