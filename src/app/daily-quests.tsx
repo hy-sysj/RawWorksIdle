@@ -28,6 +28,9 @@ export default function DailyQuestsRoute() {
         {dailyQuests.map((quest, index) => {
           const template = DAILY_QUEST_TEMPLATES.find((item) => item.id === quest.questId);
           const progressPercent = quest.target > 0 ? (quest.progress / quest.target) * 100 : 0;
+          const isCompleted = quest.completed === true;
+          const isClaimed = quest.claimed === true;
+          const isDisabled = !isCompleted || isClaimed;
 
           return (
             <View key={quest.questId} style={stylesDaily.card}>
@@ -40,11 +43,10 @@ export default function DailyQuestsRoute() {
               </View>
               <Text style={stylesDaily.cardMeta}>보상 {template?.reward ?? 0}💎</Text>
               <Pressable
-                disabled={!quest.completed || quest.claimed}
-                onPress={() => completeDailyQuest(index)}
-                style={[stylesDaily.button, (!quest.completed || quest.claimed) && stylesDaily.buttonDisabled]}
+                onPress={isDisabled ? undefined : () => completeDailyQuest(index)}
+                style={[stylesDaily.button, isDisabled && stylesDaily.buttonDisabled]}
               >
-                <Text style={stylesDaily.buttonText}>{quest.claimed ? '수령 완료' : quest.completed ? '보상 받기' : '진행 중'}</Text>
+                <Text style={stylesDaily.buttonText}>{isClaimed ? '수령 완료' : isCompleted ? '보상 받기' : '진행 중'}</Text>
               </Pressable>
             </View>
           );

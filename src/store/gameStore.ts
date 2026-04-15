@@ -34,7 +34,7 @@ import { create } from 'zustand';
 import { persist, type PersistStorage } from 'zustand/middleware';
 
 const STORE_KEY = 'rawworks-game-store';
-const STORE_VERSION = 1;
+const STORE_VERSION = 2;
 const SAVE_DEBOUNCE_MS = 2000;
 const MAX_WORKER_STORAGE_BASE = 50;
 const MANUAL_MINE_COOLDOWN_MS = 5000;
@@ -188,6 +188,10 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
+function coerceBoolean(value: unknown): boolean {
+  return value === true || value === 'true' || value === 1;
+}
+
 function rollRandom(min: number, max: number): number {
   return Math.random() * (max - min) + min;
 }
@@ -310,28 +314,57 @@ function createBasePersistedState(): PersistedGameState {
 
 function mergePersistedState(partialState: Partial<PersistedGameState> | undefined): PersistedGameState {
   const base = createBasePersistedState();
+  const normalizedDailyQuests = partialState?.dailyQuests?.length
+    ? partialState.dailyQuests.map((quest, index) => ({
+        questId: quest.questId ?? base.dailyQuests[index]?.questId ?? DAILY_QUEST_TEMPLATES[0]?.id ?? 'daily_quest',
+        progress: typeof quest.progress === 'number' ? quest.progress : 0,
+        target: typeof quest.target === 'number' ? quest.target : base.dailyQuests[index]?.target ?? 0,
+        completed: coerceBoolean(quest.completed),
+        claimed: coerceBoolean(quest.claimed),
+      }))
+    : base.dailyQuests;
+  const normalizedWorkers = partialState?.workers?.map((worker) => ({
+    ...worker,
+    locked: coerceBoolean(worker.locked),
+  })) ?? base.workers;
+  const normalizedAchievements = Object.fromEntries(
+    Object.entries({ ...base.achievements, ...partialState?.achievements }).map(([achievementId, unlocked]) => [achievementId, coerceBoolean(unlocked)]),
+  ) as Record<AchievementId, boolean>;
+  const normalizedPrestigeCount: Record<PrestigeTier, number> = {
+    1: typeof partialState?.prestigeCount?.[1] === 'number' ? partialState.prestigeCount[1] : base.prestigeCount[1],
+    2: typeof partialState?.prestigeCount?.[2] === 'number' ? partialState.prestigeCount[2] : base.prestigeCount[2],
+    3: typeof partialState?.prestigeCount?.[3] === 'number' ? partialState.prestigeCount[3] : base.prestigeCount[3],
+  };
 
   return {
-    ...base,
-    ...partialState,
     resources: { ...base.resources, ...partialState?.resources },
     prestigeItems: { ...base.prestigeItems, ...partialState?.prestigeItems },
+    diamonds: typeof partialState?.diamonds === 'number' ? partialState.diamonds : base.diamonds,
+    activeRecipes: Array.isArray(partialState?.activeRecipes) ? partialState.activeRecipes : base.activeRecipes,
     upgrades: { ...base.upgrades, ...partialState?.upgrades },
+    workers: normalizedWorkers,
     workerAssignments: { ...base.workerAssignments, ...partialState?.workerAssignments },
-    mastery: { ...base.mastery, ...partialState?.mastery },
-    achievements: { ...base.achievements, ...partialState?.achievements },
-    prestigeCount: { ...base.prestigeCount, ...partialState?.prestigeCount },
-    ipUpgrades: { ...base.ipUpgrades, ...partialState?.ipUpgrades },
-    stats: { ...base.stats, ...partialState?.stats },
     mountainNames:
       partialState?.mountainNames && partialState.mountainNames.length === MOUNTAINS.length
         ? partialState.mountainNames
         : base.mountainNames,
-    dailyQuests: partialState?.dailyQuests?.length ? partialState.dailyQuests : base.dailyQuests,
-    dailyQuestDate: partialState?.dailyQuestDate ?? base.dailyQuestDate,
-    stage: clamp(partialState?.stage ?? base.stage, 1, 8),
-    highestStageThisRun: clamp(partialState?.highestStageThisRun ?? base.highestStageThisRun, 1, 8),
-    prestigeTier: clamp(partialState?.prestigeTier ?? base.prestigeTier, 0, 3),
+    gachaPity: typeof partialState?.gachaPity === 'number' ? partialState.gachaPity : base.gachaPity,
+    mastery: { ...base.mastery, ...partialState?.mastery },
+    roadLevel: clamp(typeof partialState?.roadLevel === 'number' ? partialState.roadLevel : base.roadLevel, 0, 4),
+    tutorialStep: typeof partialState?.tutorialStep === 'number' ? partialState.tutorialStep : base.tutorialStep,
+    tutorialComplete: coerceBoolean(partialState?.tutorialComplete ?? base.tutorialComplete),
+    achievements: normalizedAchievements,
+    dailyQuests: normalizedDailyQuests,
+    dailyQuestDate: typeof partialState?.dailyQuestDate === 'string' ? partialState.dailyQuestDate : base.dailyQuestDate,
+    totalPrestigeCount: typeof partialState?.totalPrestigeCount === 'number' ? partialState.totalPrestigeCount : base.totalPrestigeCount,
+    highestStageThisRun: clamp(typeof partialState?.highestStageThisRun === 'number' ? partialState.highestStageThisRun : base.highestStageThisRun, 1, 8),
+    stage: clamp(typeof partialState?.stage === 'number' ? partialState.stage : base.stage, 1, 8),
+    prestigeTier: clamp(typeof partialState?.prestigeTier === 'number' ? partialState.prestigeTier : base.prestigeTier, 0, 3),
+    prestigeCount: normalizedPrestigeCount,
+    industryPoints: typeof partialState?.industryPoints === 'number' ? partialState.industryPoints : base.industryPoints,
+    ipUpgrades: { ...base.ipUpgrades, ...partialState?.ipUpgrades },
+    stats: { ...base.stats, ...partialState?.stats },
+    lastSaveTime: typeof partialState?.lastSaveTime === 'string' ? partialState.lastSaveTime : base.lastSaveTime,
   };
 }
 
@@ -341,6 +374,7 @@ function migratePersistedState(persistedState: unknown, version: number): Persis
   switch (version) {
     case 0:
     case 1:
+    case 2:
     default:
       return mergePersistedState(state);
   }
@@ -1418,6 +1452,10 @@ export const useGameStore = create<GameStoreState>()(
       storage: debouncedStorage,
       partialize: (state) => getPersistedSlice(state),
       migrate: (persistedState, version) => migratePersistedState(persistedState, version),
+      merge: (_persistedState, currentState) => ({
+        ...currentState,
+        ...mergePersistedState(_persistedState as Partial<PersistedGameState>),
+      }),
       onRehydrateStorage: () => (state) => {
         if (!state) {
           return;

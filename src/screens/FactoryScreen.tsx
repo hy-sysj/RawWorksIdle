@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
 import { ScreenShell } from '@/components/ScreenShell';
 import { IP_UPGRADES } from '@/data/ipUpgrades';
@@ -9,6 +8,7 @@ import { getMountainsAtStage } from '@/data/mountains';
 import { recipeById } from '@/data/recipes';
 import { resourceById, type ResourceId } from '@/data/resources';
 import { useGameStore } from '@/store/gameStore';
+import { logDiagnosticsSnapshot } from '@/utils/runtimeDiagnostics';
 import { getDifficultyLabel } from '@/utils/progression';
 import { palette, spacing, typography } from '@/utils/theme';
 
@@ -40,30 +40,7 @@ function formatValue(value: number): string {
 }
 
 function ModuleSpark({ active }: { active: boolean }) {
-  const progress = useSharedValue(0);
-
-  useEffect(() => {
-    if (!active) {
-      progress.value = 0;
-      return;
-    }
-
-    progress.value = withRepeat(
-      withTiming(1, {
-        duration: 1600,
-        easing: Easing.inOut(Easing.quad),
-      }),
-      -1,
-      true,
-    );
-  }, [active, progress]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: active ? 0.2 + progress.value * 0.8 : 0,
-    transform: [{ translateY: -progress.value * 8 }],
-  }));
-
-  return <Animated.Text style={[styles.spark, animatedStyle]}>{active ? '✦' : ''}</Animated.Text>;
+  return <Text style={[styles.spark, !active && styles.sparkHidden]}>{active ? '✦' : ''}</Text>;
 }
 
 export default function FactoryScreen() {
@@ -89,6 +66,14 @@ export default function FactoryScreen() {
     const timer = setInterval(() => setNow(Date.now()), 300);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    logDiagnosticsSnapshot('screen mount', {
+      screen: 'FactoryScreen',
+      stage,
+      activeRecipeCount: activeRecipes.length,
+    });
+  }, [activeRecipes.length, stage]);
 
   const totalIpSpent = useMemo(() => {
     return IP_UPGRADES.reduce((sum, upgrade) => sum + (ipUpgrades[upgrade.id] ?? 0) * upgrade.cost, 0);
@@ -390,6 +375,9 @@ const styles = StyleSheet.create({
     color: '#ffd36e',
     fontSize: 18,
     fontWeight: '900',
+  },
+  sparkHidden: {
+    opacity: 0,
   },
   heroGrid: {
     flexDirection: 'row',

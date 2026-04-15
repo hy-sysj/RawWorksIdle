@@ -1,13 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import Animated, { FadeInDown, FadeInUp, FadeOutUp } from 'react-native-reanimated';
 
 import { ScreenShell } from '@/components/ScreenShell';
 import { IP_UPGRADES } from '@/data/ipUpgrades';
 import { calculateIpEarned, canPrestige, getPrestigeItemId, getTierBaseIp, getTierBaseStage } from '@/engine/PrestigeEngine';
 import { resourceById } from '@/data/resources';
 import { useGameStore, type PrestigeTier } from '@/store/gameStore';
+import { logDiagnosticsSnapshot } from '@/utils/runtimeDiagnostics';
 import { getDifficultyLabel } from '@/utils/progression';
 import { palette, spacing, typography } from '@/utils/theme';
 
@@ -87,6 +87,15 @@ export default function PrestigeScreen() {
       clearTimeout(dismissTimer);
     };
   }, [dismissPrestigeReport, lastPrestigeReport]);
+
+  useEffect(() => {
+    logDiagnosticsSnapshot('screen mount', {
+      screen: 'PrestigeScreen',
+      stage,
+      industryPoints,
+      prestigeTier,
+    });
+  }, [industryPoints, prestigeTier, stage]);
 
   return (
     <ScreenShell
@@ -172,8 +181,11 @@ export default function PrestigeScreen() {
                 {!unlocked ? <Text style={styles.lockOverlayText}>이 티어는 IP 상점의 티어 해금 구매 후 활성화됩니다.</Text> : null}
 
                 <Pressable
-                  disabled={!canExecute}
                   onPress={() => {
+                    if (!canExecute) {
+                      return;
+                    }
+
                     Alert.alert(
                       '기업 매각',
                       `현재 런을 리셋하고 IP ${ipPreview}를 획득합니다. 일반 자원, 일반 업그레이드, 활성 생산 슬롯이 초기화됩니다. 진행할까요?`,
@@ -229,8 +241,7 @@ export default function PrestigeScreen() {
                 </View>
 
                 <Pressable
-                  disabled={!canBuy}
-                  onPress={() => buyIpUpgrade(upgrade.id)}
+                  onPress={canBuy ? () => buyIpUpgrade(upgrade.id) : undefined}
                   style={[styles.shopButton, canBuy ? styles.shopButtonEnabled : styles.shopButtonDisabled]}
                 >
                   <Text style={styles.shopButtonText}>{isMaxed ? 'MAX' : canBuy ? `구매 ${upgrade.cost} IP` : affordable ? '구매 불가' : 'IP 부족'}</Text>
@@ -243,21 +254,21 @@ export default function PrestigeScreen() {
         </View>
 
         {lastPrestigeReport ? (
-          <Animated.View entering={FadeInDown.duration(220)} exiting={FadeOutUp.duration(220)} style={styles.toastWrap} pointerEvents="none">
+          <View style={styles.toastWrap} pointerEvents="none">
             <View style={styles.toastCard}>
               <Text style={styles.toastTitle}>프레스티지 완료</Text>
               <Text style={styles.toastText}>★{lastPrestigeReport.tier} 매각 완료 · IP +{lastPrestigeReport.ipEarned}</Text>
             </View>
-          </Animated.View>
+          </View>
         ) : null}
 
         {showTransition ? (
-          <Animated.View entering={FadeInUp.duration(180)} exiting={FadeOutUp.duration(220)} style={styles.transitionOverlay} pointerEvents="none">
+          <View style={styles.transitionOverlay} pointerEvents="none">
             <View style={styles.transitionCard}>
               <Text style={styles.transitionTitle}>기업 매각 중</Text>
               <Text style={styles.transitionText}>라인을 정리하고 새 런 준비를 마칩니다.</Text>
             </View>
-          </Animated.View>
+          </View>
         ) : null}
       </ScrollView>
     </ScreenShell>

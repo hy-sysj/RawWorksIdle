@@ -5,6 +5,7 @@ import { ScreenShell } from '@/components/ScreenShell';
 import { RECIPES, recipeById, type RecipeDefinition, type RecipeId } from '@/data/recipes';
 import { resourceById } from '@/data/resources';
 import { useGameStore } from '@/store/gameStore';
+import { logDiagnosticsSnapshot } from '@/utils/runtimeDiagnostics';
 import { palette, spacing, typography } from '@/utils/theme';
 
 const SECTION_ORDER = ['wood', 'iron', 'oil', 'copper', 'aluminum', 'silicon', 'lithium', 'gold', 'rare_earth', 'uranium', 'cross', 'prestige'] as const;
@@ -76,6 +77,14 @@ export default function ProductionScreen() {
     const timer = setInterval(() => setNow(Date.now()), 250);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    logDiagnosticsSnapshot('screen mount', {
+      screen: 'ProductionScreen',
+      stage,
+      activeRecipeCount: activeRecipes.length,
+    });
+  }, [activeRecipes.length, stage]);
 
   const maxSlots = getMaxProductionSlots();
   const occupiedSlots = new Set(activeRecipes.map((recipe) => recipe.slot));
@@ -242,12 +251,13 @@ export default function ProductionScreen() {
                   </View>
 
                   <Pressable
-                    disabled={!canStart}
-                    onPress={() => {
-                      if (firstEmptySlot !== undefined) {
-                        startRecipe(recipe.id as RecipeId, firstEmptySlot);
-                      }
-                    }}
+                    onPress={canStart
+                      ? () => {
+                          if (firstEmptySlot !== undefined) {
+                            startRecipe(recipe.id as RecipeId, firstEmptySlot);
+                          }
+                        }
+                      : undefined}
                     style={[styles.actionButton, !canStart && styles.actionButtonDisabled]}
                   >
                     <Text style={styles.actionButtonText}>

@@ -4,7 +4,6 @@ import {
   Modal,
   PanResponder,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,15 +12,6 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import Svg, { Circle, Line } from 'react-native-svg';
-import Animated, {
-  Easing,
-  FadeInUp,
-  FadeOutUp,
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withTiming,
-} from 'react-native-reanimated';
 
 import { ACHIEVEMENTS } from '@/data/achievements';
 import { DAILY_QUEST_TEMPLATES } from '@/data/dailyQuests';
@@ -29,15 +19,16 @@ import { MOUNTAINS, type MountainDefinition } from '@/data/mountains';
 import { resourceById, type ResourceId } from '@/data/resources';
 import { tutorialQuestByStep } from '@/data/tutorial';
 import { useGameStore } from '@/store/gameStore';
+import { logDiagnosticsSnapshot, logNonBoolean } from '@/utils/runtimeDiagnostics';
 import { palette, spacing, typography } from '@/utils/theme';
 
 const TRANSPORT_EMOJI = ['🚶', '🛒', '⛏️', '🚛', '🤖'] as const;
 const TRANSPORT_LABELS = ['도보', '손수레', '광차', '트럭', '자율주행'] as const;
 const ROAD_LABELS = ['오솔길', '자갈길', '레일', '포장도로', '고속도로'] as const;
 const ROAD_STYLES = [
-  { stroke: '#55607a', strokeWidth: 1.5, dashArray: '6 8' },
+  { stroke: '#55607a', strokeWidth: 1.5, dashArray: [6, 8] },
   { stroke: '#7f8799', strokeWidth: 2, dashArray: undefined },
-  { stroke: '#b9c1d0', strokeWidth: 3, dashArray: '2 4' },
+  { stroke: '#b9c1d0', strokeWidth: 3, dashArray: [2, 4] },
   { stroke: '#5f6678', strokeWidth: 4, dashArray: undefined },
   { stroke: '#d7a34b', strokeWidth: 5, dashArray: undefined },
 ] as const;
@@ -54,6 +45,15 @@ const ABILITY_META = {
 } as const;
 const MIN_SCALE = 0.85;
 const MAX_SCALE = 1.55;
+const STARTUP_DEBUG_FLAGS = {
+  renderMinimalShell: false,
+  renderMapSection: true,
+  renderRightRail: true,
+  renderTutorialBanner: true,
+  renderOfflineBanner: true,
+  renderOfflineModal: true,
+  renderMountainModal: true,
+} as const;
 
 type PopupItem = {
   id: number;
@@ -127,47 +127,38 @@ function TransportRunner({
   fromY,
   toX,
   toY,
-  durationMs,
 }: {
   emoji: string;
   fromX: number;
   fromY: number;
   toX: number;
   toY: number;
-  durationMs: number;
 }) {
-  const progress = useSharedValue(0);
-
-  useEffect(() => {
-    progress.value = 0;
-    progress.value = withRepeat(
-      withTiming(1, {
-        duration: Math.max(durationMs, 800),
-        easing: Easing.linear,
-      }),
-      -1,
-      true,
-    );
-  }, [durationMs, progress]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: fromX + (toX - fromX) * progress.value - 14 },
-      { translateY: fromY + (toY - fromY) * progress.value - 14 },
-      { scale: 0.92 + progress.value * 0.12 },
-    ],
-  }));
+  const progress = 0.5;
 
   return (
-    <Animated.View pointerEvents="none" style={[styles.runner, animatedStyle]}>
+    <View
+      pointerEvents="none"
+      style={[
+        styles.runner,
+        {
+          transform: [
+            { translateX: fromX + (toX - fromX) * progress - 14 },
+            { translateY: fromY + (toY - fromY) * progress - 14 },
+            { scale: 1 },
+          ],
+        },
+      ]}
+    >
       <Text style={styles.runnerEmoji}>{emoji}</Text>
-    </Animated.View>
+    </View>
   );
 }
 
 export default function MainScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
+  const isCompactLayout = width < 860;
   const [now, setNow] = useState(Date.now());
   const [selectedMountainId, setSelectedMountainId] = useState<string | null>(null);
   const [popups, setPopups] = useState<PopupItem[]>([]);
@@ -204,6 +195,34 @@ export default function MainScreen() {
     const timer = setInterval(() => setNow(Date.now()), 500);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    logDiagnosticsSnapshot('main screen snapshot', {
+      stage,
+      tutorialComplete,
+      tutorialCompleteType: typeof tutorialComplete,
+      offlineReportVisible: offlineReport !== null,
+      selectedMountainVisible: selectedMountainId !== null,
+      dailyQuestCount: dailyQuests.length,
+      startupFlags: STARTUP_DEBUG_FLAGS,
+    });
+
+    logNonBoolean('main tutorialComplete', tutorialComplete);
+    dailyQuests.forEach((quest, index) => {
+      logNonBoolean('main dailyQuests.completed', quest.completed, {
+        index,
+        questId: quest.questId,
+        progress: quest.progress,
+        target: quest.target,
+      });
+      logNonBoolean('main dailyQuests.claimed', quest.claimed, {
+        index,
+        questId: quest.questId,
+        progress: quest.progress,
+        target: quest.target,
+      });
+    });
+  }, [dailyQuests, offlineReport, selectedMountainId, stage, tutorialComplete]);
 
   const viewportSize = Math.min(width - spacing.lg * 2, 420);
   const mapContentSize = Math.max(560, viewportSize * 1.42);
@@ -317,51 +336,102 @@ export default function MainScreen() {
 
   const activeDailyProgress = dailyQuests.filter((quest) => quest.completed && !quest.claimed).length;
 
-  return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Text style={styles.eyebrow}>RAW WORKS</Text>
-            <Text style={styles.title}>채취 현황판</Text>
-            <View style={styles.resourceRow}>
-              {topResources.length ? (
-                topResources.map(([resourceId, amount]) => (
-                  <View key={resourceId} style={styles.resourceChip}>
-                    <Text style={styles.resourceChipText}>{resourceById[resourceId as ResourceId].emoji} {formatNumber(amount)}</Text>
-                  </View>
-                ))
-              ) : (
-                <Text style={styles.emptyText}>해금된 산에서 자동 채굴이 시작되면 주요 자원이 여기에 표시됩니다.</Text>
-              )}
-            </View>
+  if (STARTUP_DEBUG_FLAGS.renderMinimalShell) {
+    return (
+      <View style={styles.safeArea}>
+        <View style={styles.container}>
+          <View style={[styles.infoCard, styles.debugPlaceholderCard]}>
+            <Text style={styles.infoTitle}>MainScreen 최소 렌더</Text>
+            <Text style={styles.infoMeta}>이 화면이 보이면 MainScreen의 하위 UI가 원인입니다.</Text>
+            <Text style={styles.infoMeta}>stage: {stage}</Text>
+            <Text style={styles.infoMeta}>dailyQuests: {dailyQuests.length}</Text>
+            <Text style={styles.infoMeta}>tutorialComplete: {String(tutorialComplete)}</Text>
           </View>
+        </View>
+      </View>
+    );
+  }
 
-          <View style={styles.headerRight}>
-            <View style={styles.currencyCard}>
-              <Text style={styles.currencyLabel}>💎 다이아</Text>
-              <Text style={styles.currencyValue}>{formatNumber(diamonds)}</Text>
+  const questSummaryCards = (
+    <>
+      {dailyQuests.map((quest, index) => {
+        const template = DAILY_QUEST_TEMPLATES.find((item) => item.id === quest.questId);
+        const progressPercent = quest.target > 0 ? (quest.progress / quest.target) * 100 : 0;
+        const isCompleted = quest.completed === true;
+        const isClaimed = quest.claimed === true;
+        const isDisabled = !isCompleted || isClaimed;
+
+        return (
+          <View key={quest.questId} style={styles.infoCard}>
+            <Text style={styles.infoTitle}>📋 {template?.nameKo ?? quest.questId}</Text>
+            <Text style={styles.infoMeta}>{quest.progress}/{quest.target}</Text>
+            <View style={styles.progressTrack}>
+              <View style={[styles.progressFill, { width: `${Math.min(progressPercent, 100)}%` }]} />
             </View>
             <Pressable
-              style={styles.settingsButton}
-              onPress={() => Alert.alert('설정 준비 중', '설정 화면과 광고 가속 기능은 다음 단계에서 연결됩니다.')}
+              onPress={isDisabled ? undefined : () => completeDailyQuest(index)}
+              style={[styles.infoButton, isDisabled && styles.infoButtonDisabled]}
             >
-              <Text style={styles.settingsButtonText}>⚙️ 설정</Text>
+              <Text style={styles.infoButtonText}>{isClaimed ? '수령 완료' : isCompleted ? '보상 받기' : '진행 중'}</Text>
             </Pressable>
           </View>
-        </View>
+        );
+      })}
 
-        <View style={styles.comboRow}>
-          <Text style={styles.comboLabel}>콤보 게이지</Text>
-          <View style={styles.comboTrack}>
-            <View style={[styles.comboFill, { width: `${Math.min((tapState.comboMultiplier / 3) * 100, 100)}%` }]} />
+      <View style={styles.infoCard}>
+        <Text style={styles.infoTitle}>🗺️ 진행 요약</Text>
+        <Text style={styles.infoMeta}>해금 산 {unlockedMountainsCount}/15</Text>
+        <Text style={styles.infoMeta}>도로 {ROAD_LABELS[roadLevel] ?? ROAD_LABELS[0]}</Text>
+        <Text style={styles.infoMeta}>현재 이동수단 {TRANSPORT_LABELS[transportLevel]}</Text>
+      </View>
+    </>
+  );
+
+  const screenContent = (
+    <>
+      <View style={[styles.header, isCompactLayout && styles.headerCompact]}>
+        <View style={styles.headerLeft}>
+          <Text style={styles.eyebrow}>RAW WORKS</Text>
+          <Text style={styles.title}>채취 현황판</Text>
+          <View style={styles.resourceRow}>
+            {topResources.length ? (
+              topResources.map(([resourceId, amount]) => (
+                <View key={resourceId} style={styles.resourceChip}>
+                  <Text style={styles.resourceChipText}>{resourceById[resourceId as ResourceId].emoji} {formatNumber(amount)}</Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.emptyText}>해금된 산에서 자동 채굴이 시작되면 주요 자원이 여기에 표시됩니다.</Text>
+            )}
           </View>
-          <Text style={styles.comboValue}>x{tapState.comboMultiplier.toFixed(1)}</Text>
         </View>
 
-        <View style={styles.mainSection}>
-          <View style={styles.mapViewport}>
-            <View style={styles.mapHudTop}>
+        <View style={[styles.headerRight, isCompactLayout && styles.headerRightCompact]}>
+          <View style={[styles.currencyCard, isCompactLayout && styles.currencyCardCompact]}>
+            <Text style={styles.currencyLabel}>💎 다이아</Text>
+            <Text style={styles.currencyValue}>{formatNumber(diamonds)}</Text>
+          </View>
+          <Pressable
+            style={[styles.settingsButton, isCompactLayout && styles.settingsButtonCompact]}
+            onPress={() => Alert.alert('설정 준비 중', '설정 화면과 광고 가속 기능은 다음 단계에서 연결됩니다.')}
+          >
+            <Text style={styles.settingsButtonText}>⚙️ 설정</Text>
+          </Pressable>
+        </View>
+      </View>
+
+      <View style={styles.comboRow}>
+        <Text style={styles.comboLabel}>콤보 게이지</Text>
+        <View style={styles.comboTrack}>
+          <View style={[styles.comboFill, { width: `${Math.min((tapState.comboMultiplier / 3) * 100, 100)}%` }]} />
+        </View>
+        <Text style={styles.comboValue}>x{tapState.comboMultiplier.toFixed(1)}</Text>
+      </View>
+
+      <View style={[styles.mainSection, isCompactLayout && styles.mainSectionCompact]}>
+        {STARTUP_DEBUG_FLAGS.renderMapSection ? (
+          <View style={[styles.mapViewport, isCompactLayout && styles.mapViewportCompact]}>
+            <View style={[styles.mapHudTop, isCompactLayout && styles.mapHudTopCompact]}>
               <View style={styles.hudChip}>
                 <Text style={styles.hudChipText}>{TRANSPORT_LABELS[transportLevel]} {transportEmoji}</Text>
               </View>
@@ -396,6 +466,7 @@ export default function MainScreen() {
                     <Circle cx={center} cy={center} r={72} fill="#262842" stroke={palette.accentMuted} strokeWidth={1} />
                     {positionedMountains.map(({ mountain, x, y, isUnlocked }) => {
                       const roadStyle = ROAD_STYLES[roadLevel] ?? ROAD_STYLES[0];
+                      const strokeDasharray = isUnlocked ? roadStyle.dashArray : [4, 10];
 
                       return (
                         <Line
@@ -406,7 +477,7 @@ export default function MainScreen() {
                           y2={y}
                           stroke={isUnlocked ? roadStyle.stroke : 'rgba(143,151,171,0.22)'}
                           strokeWidth={isUnlocked ? roadStyle.strokeWidth : 1}
-                          strokeDasharray={isUnlocked ? roadStyle.dashArray : '4 10'}
+                          {...(strokeDasharray ? { strokeDasharray } : {})}
                         />
                       );
                     })}
@@ -435,7 +506,6 @@ export default function MainScreen() {
                             fromY={center}
                             toX={x}
                             toY={y}
-                            durationMs={Math.max(1200, getMiningCycleMs(mountain.id))}
                           />
                         ) : null}
 
@@ -472,195 +542,194 @@ export default function MainScreen() {
                   })}
 
                   {popups.map((popup) => (
-                    <Animated.View
+                    <View
                       key={popup.id}
-                      entering={FadeInUp.duration(160)}
-                      exiting={FadeOutUp.duration(260)}
                       style={[styles.popup, { left: popup.x - 36, top: popup.y - 72 }]}
                     >
                       <Text style={styles.popupText}>{popup.text}</Text>
-                    </Animated.View>
+                    </View>
                   ))}
                 </View>
               </View>
             </View>
 
-            <View style={styles.overlayPanel}>
-              <Pressable style={styles.sideButton} onPress={() => Alert.alert('광고 가속 준비 중', 'x1.2 배속 버튼은 Step 11에서 광고 보상과 연결됩니다.')}>
+            <View style={[styles.overlayPanel, isCompactLayout && styles.overlayPanelCompact]}>
+              <Pressable style={[styles.sideButton, isCompactLayout && styles.sideButtonCompact]} onPress={() => Alert.alert('광고 가속 준비 중', 'x1.2 배속 버튼은 Step 11에서 광고 보상과 연결됩니다.')}>
                 <Text style={styles.sideButtonLabel}>x1.2</Text>
                 <Text style={styles.sideButtonMeta}>광고</Text>
               </Pressable>
-              <Pressable style={styles.sideButton} onPress={() => router.push('/daily-quests')}>
+              <Pressable style={[styles.sideButton, isCompactLayout && styles.sideButtonCompact]} onPress={() => router.push('/daily-quests')}>
                 <Text style={styles.sideButtonLabel}>📋</Text>
                 <Text style={styles.sideButtonMeta}>퀘스트 {pendingQuestCount > 0 ? `· ${pendingQuestCount}` : ''}</Text>
               </Pressable>
-              <Pressable style={styles.sideButton} onPress={() => router.push('/achievements')}>
+              <Pressable style={[styles.sideButton, isCompactLayout && styles.sideButtonCompact]} onPress={() => router.push('/achievements')}>
                 <Text style={styles.sideButtonLabel}>🏆</Text>
                 <Text style={styles.sideButtonMeta}>{unlockedAchievements}/{ACHIEVEMENTS.length}</Text>
               </Pressable>
-              <Pressable style={styles.sideButton} onPress={() => router.push('/factory')}>
+              <Pressable style={[styles.sideButton, isCompactLayout && styles.sideButtonCompact]} onPress={() => router.push('/factory')}>
                 <Text style={styles.sideButtonLabel}>📈</Text>
                 <Text style={styles.sideButtonMeta}>통계</Text>
               </Pressable>
-              <Pressable style={styles.sideButton} onPress={() => router.push('/prestige')}>
+              <Pressable style={[styles.sideButton, isCompactLayout && styles.sideButtonCompact]} onPress={() => router.push('/prestige')}>
                 <Text style={styles.sideButtonLabel}>🏭</Text>
                 <Text style={styles.sideButtonMeta}>{industryPoints} IP</Text>
               </Pressable>
             </View>
           </View>
-
-          <ScrollView style={styles.rightRail} contentContainerStyle={styles.rightRailContent} showsVerticalScrollIndicator={false}>
-            {dailyQuests.map((quest, index) => {
-              const template = DAILY_QUEST_TEMPLATES.find((item) => item.id === quest.questId);
-              const progressPercent = quest.target > 0 ? (quest.progress / quest.target) * 100 : 0;
-
-              return (
-                <View key={quest.questId} style={styles.infoCard}>
-                  <Text style={styles.infoTitle}>📋 {template?.nameKo ?? quest.questId}</Text>
-                  <Text style={styles.infoMeta}>{quest.progress}/{quest.target}</Text>
-                  <View style={styles.progressTrack}>
-                    <View style={[styles.progressFill, { width: `${Math.min(progressPercent, 100)}%` }]} />
-                  </View>
-                  <Pressable
-                    disabled={!quest.completed || quest.claimed}
-                    onPress={() => completeDailyQuest(index)}
-                    style={[styles.infoButton, (!quest.completed || quest.claimed) && styles.infoButtonDisabled]}
-                  >
-                    <Text style={styles.infoButtonText}>{quest.claimed ? '수령 완료' : quest.completed ? '보상 받기' : '진행 중'}</Text>
-                  </Pressable>
-                </View>
-              );
-            })}
-
-            <View style={styles.infoCard}>
-              <Text style={styles.infoTitle}>🗺️ 진행 요약</Text>
-              <Text style={styles.infoMeta}>해금 산 {unlockedMountainsCount}/15</Text>
-              <Text style={styles.infoMeta}>도로 {ROAD_LABELS[roadLevel] ?? ROAD_LABELS[0]}</Text>
-              <Text style={styles.infoMeta}>현재 이동수단 {TRANSPORT_LABELS[transportLevel]}</Text>
-            </View>
-          </ScrollView>
-        </View>
-
-        {currentTutorial ? (
-          <View style={styles.tutorialBanner}>
-            <View style={styles.tutorialCopy}>
-              <Text style={styles.tutorialTitle}>{currentTutorial.emoji} {currentTutorial.nameKo}</Text>
-              <Text style={styles.tutorialText}>튜토리얼 {currentTutorial.step}/6 · 보상 {currentTutorial.reward}💎</Text>
-            </View>
-            <View style={styles.tutorialActions}>
-              <Pressable style={styles.tutorialButtonGhost} onPress={() => advanceTutorial(currentTutorial.step)}>
-                <Text style={styles.tutorialButtonGhostText}>건너뛰기</Text>
-              </Pressable>
-              <View style={styles.pulseDot} />
-            </View>
+        ) : (
+          <View style={[styles.mapViewport, styles.debugCard]}>
+            <Text style={styles.infoTitle}>디버그 시작 모드</Text>
+            <Text style={styles.infoMeta}>맵/오버레이/SVG 섹션을 잠시 비활성화했습니다.</Text>
+            <Text style={styles.infoMeta}>앱이 뜨면 원인은 MainScreen의 맵 subtree입니다.</Text>
           </View>
-        ) : null}
+        )}
 
-        {offlineReport ? (
-          <View style={styles.offlineBanner}>
-            <View>
-              <Text style={styles.offlineTitle}>오프라인 수익 배너</Text>
-              <Text style={styles.offlineMeta}>{Math.floor(offlineReport.elapsedSec / 60)}분 동안 {formatNumber(totalOfflineEarned)}개 획득</Text>
+        {STARTUP_DEBUG_FLAGS.renderRightRail ? (
+          isCompactLayout ? (
+            <View style={[styles.rightRail, styles.rightRailCompact, styles.rightRailContentCompact]}>
+              {questSummaryCards}
             </View>
-            <Pressable style={styles.offlineButton} onPress={() => Alert.alert('오프라인 요약', '중앙 팝업에서 세부 내역을 확인할 수 있습니다.') }>
-              <Text style={styles.offlineButtonText}>요약 보기</Text>
+          ) : (
+            <ScrollView style={styles.rightRail} contentContainerStyle={styles.rightRailContent} showsVerticalScrollIndicator={false}>
+              {questSummaryCards}
+            </ScrollView>
+          )
+        ) : null}
+      </View>
+
+      {STARTUP_DEBUG_FLAGS.renderTutorialBanner && currentTutorial ? (
+        <View style={[styles.tutorialBanner, isCompactLayout && styles.bannerCompact]}>
+          <View style={styles.tutorialCopy}>
+            <Text style={styles.tutorialTitle}>{currentTutorial.emoji} {currentTutorial.nameKo}</Text>
+            <Text style={styles.tutorialText}>튜토리얼 {currentTutorial.step}/6 · 보상 {currentTutorial.reward}💎</Text>
+          </View>
+          <View style={styles.tutorialActions}>
+            <Pressable style={styles.tutorialButtonGhost} onPress={() => advanceTutorial(currentTutorial.step)}>
+              <Text style={styles.tutorialButtonGhostText}>건너뛰기</Text>
+            </Pressable>
+            <View style={styles.pulseDot} />
+          </View>
+        </View>
+      ) : null}
+
+      {STARTUP_DEBUG_FLAGS.renderOfflineBanner && offlineReport ? (
+        <View style={[styles.offlineBanner, isCompactLayout && styles.bannerCompact]}>
+          <View style={styles.bannerTextBlock}>
+            <Text style={styles.offlineTitle}>오프라인 수익 배너</Text>
+            <Text style={styles.offlineMeta}>{Math.floor(offlineReport.elapsedSec / 60)}분 동안 {formatNumber(totalOfflineEarned)}개 획득</Text>
+          </View>
+          <Pressable style={styles.offlineButton} onPress={() => Alert.alert('오프라인 요약', '중앙 팝업에서 세부 내역을 확인할 수 있습니다.') }>
+            <Text style={styles.offlineButtonText}>요약 보기</Text>
+          </Pressable>
+        </View>
+      ) : null}
+
+      <Modal animationType="fade" transparent visible={STARTUP_DEBUG_FLAGS.renderOfflineModal && offlineReport !== null} onRequestClose={dismissOfflineReport}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>오프라인 수익</Text>
+            <Text style={styles.modalMeta}>{Math.floor((offlineReport?.elapsedSec ?? 0) / 60)}분 동안 공장이 가동되었습니다.</Text>
+            <ScrollView style={styles.modalList} contentContainerStyle={styles.modalListContent}>
+              {!!offlineReport?.miningEarned.length && (
+                <>
+                  <Text style={styles.modalSectionTitle}>채굴 수익</Text>
+                  {offlineReport.miningEarned.map((entry) => (
+                    <View key={`mining_${entry.resourceId}`} style={styles.modalRow}>
+                      <Text style={styles.modalRowText}>{resourceById[entry.resourceId as ResourceId].emoji} {resourceById[entry.resourceId as ResourceId].nameKo}</Text>
+                      <Text style={styles.modalRowValue}>+{formatNumber(entry.amount)}</Text>
+                    </View>
+                  ))}
+                </>
+              )}
+              {!!offlineReport?.productionEarned.length && (
+                <>
+                  <Text style={styles.modalSectionTitle}>생산 수익</Text>
+                  {offlineReport.productionEarned.map((entry) => (
+                    <View key={`production_${entry.resourceId}`} style={styles.modalRow}>
+                      <Text style={styles.modalRowText}>{resourceById[entry.resourceId as ResourceId].emoji} {resourceById[entry.resourceId as ResourceId].nameKo}</Text>
+                      <Text style={styles.modalRowValue}>+{formatNumber(entry.amount)}</Text>
+                    </View>
+                  ))}
+                </>
+              )}
+              {!offlineReport?.miningEarned.length && !offlineReport?.productionEarned.length && (
+                <Text style={styles.modalEmpty}>획득한 자원이 없습니다. 다음 복귀 때 다시 확인해보세요.</Text>
+              )}
+            </ScrollView>
+            <Pressable style={styles.modalButton} onPress={dismissOfflineReport}>
+              <Text style={styles.modalButtonText}>확인</Text>
             </Pressable>
           </View>
-        ) : null}
+        </View>
+      </Modal>
 
-        <Modal animationType="fade" transparent visible={offlineReport !== null} onRequestClose={dismissOfflineReport}>
-          <View style={styles.modalBackdrop}>
-            <View style={styles.modalCard}>
-              <Text style={styles.modalTitle}>오프라인 수익</Text>
-              <Text style={styles.modalMeta}>{Math.floor((offlineReport?.elapsedSec ?? 0) / 60)}분 동안 공장이 가동되었습니다.</Text>
-              <ScrollView style={styles.modalList} contentContainerStyle={styles.modalListContent}>
-                {!!offlineReport?.miningEarned.length && (
-                  <>
-                    <Text style={styles.modalSectionTitle}>채굴 수익</Text>
-                    {offlineReport.miningEarned.map((entry) => (
-                      <View key={`mining_${entry.resourceId}`} style={styles.modalRow}>
-                        <Text style={styles.modalRowText}>{resourceById[entry.resourceId as ResourceId].emoji} {resourceById[entry.resourceId as ResourceId].nameKo}</Text>
-                        <Text style={styles.modalRowValue}>+{formatNumber(entry.amount)}</Text>
+      <Modal animationType="slide" transparent visible={STARTUP_DEBUG_FLAGS.renderMountainModal && selectedMountain !== undefined} onRequestClose={() => setSelectedMountainId(null)}>
+        <View style={styles.sheetBackdrop}>
+          <View style={styles.sheetCard}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>⛰️ {selectedMountain ? mountainNames[selectedMountain.index - 1] ?? selectedMountain.id : ''}</Text>
+            <Text style={styles.sheetMeta}>현재 채굴 속도 {selectedMountain ? Math.max(0.1, getMiningCycleMs(selectedMountain.id) / 1000).toFixed(1) : '0.0'}초 / 왕복</Text>
+            <View style={styles.sheetResources}>
+              {selectedMountain?.resources.map((resourceId) => (
+                <View key={resourceId} style={styles.sheetResourceChip}>
+                  <Text style={styles.sheetResourceText}>{resourceById[resourceId].emoji} {resourceById[resourceId].nameKo}</Text>
+                </View>
+              ))}
+            </View>
+
+            <View style={styles.workerCard}>
+              <Text style={styles.workerTitle}>배치 작업자</Text>
+              {selectedWorker ? (
+                <>
+                  <View style={[styles.workerBadge, { borderColor: GRADE_COLORS[selectedWorker.grade] }]}> 
+                    <Text style={styles.workerName}>{selectedWorker.name}</Text>
+                    <Text style={styles.workerGrade}>{selectedWorker.grade} · Lv.{selectedWorker.level}</Text>
+                  </View>
+                  <View style={styles.abilityRow}>
+                    {selectedWorker.abilities.map((ability) => (
+                      <View key={`${selectedWorker.id}_${ability.type}`} style={styles.abilityChip}>
+                        <Text style={styles.abilityChipText}>{ABILITY_META[ability.type].emoji} {ABILITY_META[ability.type].label} x{ability.multiplier.toFixed(1)}</Text>
                       </View>
                     ))}
-                  </>
-                )}
-                {!!offlineReport?.productionEarned.length && (
-                  <>
-                    <Text style={styles.modalSectionTitle}>생산 수익</Text>
-                    {offlineReport.productionEarned.map((entry) => (
-                      <View key={`production_${entry.resourceId}`} style={styles.modalRow}>
-                        <Text style={styles.modalRowText}>{resourceById[entry.resourceId as ResourceId].emoji} {resourceById[entry.resourceId as ResourceId].nameKo}</Text>
-                        <Text style={styles.modalRowValue}>+{formatNumber(entry.amount)}</Text>
-                      </View>
-                    ))}
-                  </>
-                )}
-                {!offlineReport?.miningEarned.length && !offlineReport?.productionEarned.length && (
-                  <Text style={styles.modalEmpty}>획득한 자원이 없습니다. 다음 복귀 때 다시 확인해보세요.</Text>
-                )}
-              </ScrollView>
-              <Pressable style={styles.modalButton} onPress={dismissOfflineReport}>
-                <Text style={styles.modalButtonText}>확인</Text>
+                  </View>
+                </>
+              ) : (
+                <Text style={styles.sheetMeta}>아직 작업자가 배치되지 않았습니다.</Text>
+              )}
+            </View>
+
+            <View style={styles.sheetActions}>
+              <Pressable style={styles.sheetButtonGhost} onPress={() => setSelectedMountainId(null)}>
+                <Text style={styles.sheetButtonGhostText}>닫기</Text>
+              </Pressable>
+              <Pressable
+                style={styles.sheetButton}
+                onPress={() => {
+                  setSelectedMountainId(null);
+                  router.push('/worker');
+                }}
+              >
+                <Text style={styles.sheetButtonText}>작업자 배치/교체</Text>
               </Pressable>
             </View>
           </View>
-        </Modal>
+        </View>
+      </Modal>
+    </>
+  );
 
-        <Modal animationType="slide" transparent visible={selectedMountain !== undefined} onRequestClose={() => setSelectedMountainId(null)}>
-          <View style={styles.sheetBackdrop}>
-            <View style={styles.sheetCard}>
-              <View style={styles.sheetHandle} />
-              <Text style={styles.sheetTitle}>⛰️ {selectedMountain ? mountainNames[selectedMountain.index - 1] ?? selectedMountain.id : ''}</Text>
-              <Text style={styles.sheetMeta}>현재 채굴 속도 {selectedMountain ? Math.max(0.1, getMiningCycleMs(selectedMountain.id) / 1000).toFixed(1) : '0.0'}초 / 왕복</Text>
-              <View style={styles.sheetResources}>
-                {selectedMountain?.resources.map((resourceId) => (
-                  <View key={resourceId} style={styles.sheetResourceChip}>
-                    <Text style={styles.sheetResourceText}>{resourceById[resourceId].emoji} {resourceById[resourceId].nameKo}</Text>
-                  </View>
-                ))}
-              </View>
-
-              <View style={styles.workerCard}>
-                <Text style={styles.workerTitle}>배치 작업자</Text>
-                {selectedWorker ? (
-                  <>
-                    <View style={[styles.workerBadge, { borderColor: GRADE_COLORS[selectedWorker.grade] }]}> 
-                      <Text style={styles.workerName}>{selectedWorker.name}</Text>
-                      <Text style={styles.workerGrade}>{selectedWorker.grade} · Lv.{selectedWorker.level}</Text>
-                    </View>
-                    <View style={styles.abilityRow}>
-                      {selectedWorker.abilities.map((ability) => (
-                        <View key={`${selectedWorker.id}_${ability.type}`} style={styles.abilityChip}>
-                          <Text style={styles.abilityChipText}>{ABILITY_META[ability.type].emoji} {ABILITY_META[ability.type].label} x{ability.multiplier.toFixed(1)}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  </>
-                ) : (
-                  <Text style={styles.sheetMeta}>아직 작업자가 배치되지 않았습니다.</Text>
-                )}
-              </View>
-
-              <View style={styles.sheetActions}>
-                <Pressable style={styles.sheetButtonGhost} onPress={() => setSelectedMountainId(null)}>
-                  <Text style={styles.sheetButtonGhostText}>닫기</Text>
-                </Pressable>
-                <Pressable
-                  style={styles.sheetButton}
-                  onPress={() => {
-                    setSelectedMountainId(null);
-                    router.push('/worker');
-                  }}
-                >
-                  <Text style={styles.sheetButtonText}>작업자 배치/교체</Text>
-                </Pressable>
-              </View>
-            </View>
-          </View>
-        </Modal>
-      </View>
-    </SafeAreaView>
+  return (
+    <View style={styles.safeArea}>
+      {isCompactLayout ? (
+        <ScrollView contentContainerStyle={[styles.container, styles.containerScrollContent]} showsVerticalScrollIndicator={false}>
+          {screenContent}
+        </ScrollView>
+      ) : (
+        <View style={styles.container}>
+          {screenContent}
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -676,10 +745,17 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
     gap: spacing.md,
   },
+  containerScrollContent: {
+    flexGrow: 1,
+    paddingBottom: spacing.xl,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: spacing.md,
+  },
+  headerCompact: {
+    flexDirection: 'column',
   },
   headerLeft: {
     flex: 1,
@@ -689,6 +765,10 @@ const styles = StyleSheet.create({
     width: 116,
     gap: spacing.sm,
     alignItems: 'stretch',
+  },
+  headerRightCompact: {
+    width: '100%',
+    flexDirection: 'row',
   },
   eyebrow: {
     color: palette.accentMuted,
@@ -733,6 +813,9 @@ const styles = StyleSheet.create({
     borderColor: palette.border,
     gap: spacing.xs,
   },
+  currencyCardCompact: {
+    flex: 1,
+  },
   currencyLabel: {
     color: palette.textMuted,
     fontSize: typography.caption,
@@ -747,6 +830,11 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: palette.accent,
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingsButtonCompact: {
+    minWidth: 124,
+    paddingHorizontal: spacing.md,
   },
   settingsButtonText: {
     color: palette.background,
@@ -786,6 +874,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.md,
   },
+  mainSectionCompact: {
+    flex: 0,
+    flexDirection: 'column',
+  },
   mapViewport: {
     flex: 1,
     minHeight: 460,
@@ -795,6 +887,9 @@ const styles = StyleSheet.create({
     borderColor: palette.border,
     overflow: 'hidden',
     position: 'relative',
+  },
+  mapViewportCompact: {
+    minHeight: 720,
   },
   mapHudTop: {
     position: 'absolute',
@@ -806,6 +901,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     flexWrap: 'wrap',
+  },
+  mapHudTopCompact: {
+    right: spacing.md,
   },
   hudChip: {
     paddingHorizontal: spacing.sm,
@@ -975,6 +1073,14 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     zIndex: 5,
   },
+  overlayPanelCompact: {
+    left: spacing.sm,
+    right: spacing.sm,
+    top: 'auto',
+    bottom: spacing.sm,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
   sideButton: {
     width: 62,
     minHeight: 60,
@@ -987,6 +1093,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
+  },
+  sideButtonCompact: {
+    width: '31%',
+    minWidth: 86,
+    flexGrow: 1,
   },
   sideButtonLabel: {
     color: palette.text,
@@ -1001,9 +1112,15 @@ const styles = StyleSheet.create({
   rightRail: {
     width: 210,
   },
+  rightRailCompact: {
+    width: '100%',
+  },
   rightRailContent: {
     gap: spacing.sm,
     paddingBottom: spacing.sm,
+  },
+  rightRailContentCompact: {
+    gap: spacing.sm,
   },
   infoCard: {
     padding: spacing.md,
@@ -1012,6 +1129,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: palette.border,
     gap: spacing.sm,
+  },
+  debugPlaceholderCard: {
+    marginTop: spacing.xl,
   },
   infoTitle: {
     color: palette.text,
@@ -1058,6 +1178,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#5e4a2d',
   },
+  bannerCompact: {
+    flexWrap: 'wrap',
+  },
+  bannerTextBlock: {
+    flex: 1,
+    minWidth: 180,
+  },
   tutorialCopy: {
     flex: 1,
     gap: 2,
@@ -1075,6 +1202,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+    flexWrap: 'wrap',
   },
   tutorialButtonGhost: {
     paddingHorizontal: spacing.md,

@@ -1,5 +1,5 @@
 import { PropsWithChildren } from 'react';
-import { SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { palette, spacing, typography } from '@/utils/theme';
 
@@ -11,7 +11,7 @@ type ScreenShellProps = PropsWithChildren<{
 
 export function ScreenShell({ title, subtitle, body, children }: ScreenShellProps) {
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={styles.safeArea}>
       <View style={styles.container}>
         <Text style={styles.eyebrow}>RAW WORKS</Text>
         <Text style={styles.title}>{title}</Text>
@@ -21,7 +21,7 @@ export function ScreenShell({ title, subtitle, body, children }: ScreenShellProp
           {children}
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

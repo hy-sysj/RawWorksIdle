@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ScreenShell } from '@/components/ScreenShell';
@@ -6,6 +6,7 @@ import { STAGES, type StageTransitionCondition } from '@/data/stages';
 import { resourceById, type ResourceId } from '@/data/resources';
 import { ROAD_SPEED_BY_LEVEL, TRANSPORT_CARGO_BY_LEVEL, TRANSPORT_SPEED_BY_LEVEL, UPGRADES, getUpgradeTier, type UpgradeCategory, type UpgradeEffect, type UpgradeId, type UpgradeTier } from '@/data/upgrades';
 import { useGameStore } from '@/store/gameStore';
+import { logDiagnosticsSnapshot } from '@/utils/runtimeDiagnostics';
 import { palette, spacing, typography } from '@/utils/theme';
 
 const UPGRADE_COST_MULTIPLIER = 1.5;
@@ -160,6 +161,14 @@ export default function UpgradeScreen() {
   const getMaxProductionSlots = useGameStore((state) => state.getMaxProductionSlots);
   const getMaxOfflineHours = useGameStore((state) => state.getMaxOfflineHours);
   const applyUpgrade = useGameStore((state) => state.applyUpgrade);
+
+  useEffect(() => {
+    logDiagnosticsSnapshot('screen mount', {
+      screen: 'UpgradeScreen',
+      stage,
+      industryPoints,
+    });
+  }, [industryPoints, stage]);
 
   const groupedUpgrades = useMemo(() => {
     const groups = CATEGORY_ORDER.reduce<Record<UpgradeCategory, Array<(typeof UPGRADES)[number]>>>((accumulator, category) => {
@@ -363,8 +372,7 @@ export default function UpgradeScreen() {
                     ) : null}
 
                     <Pressable
-                      disabled={!canUpgrade}
-                      onPress={() => applyUpgrade(upgrade.id)}
+                      onPress={canUpgrade ? () => applyUpgrade(upgrade.id) : undefined}
                       style={[styles.actionButton, { backgroundColor: canUpgrade ? meta.accent : palette.border }]}
                     >
                       <Text style={styles.actionButtonText}>
