@@ -44,11 +44,12 @@
 
 Play를 누르면 최소한 아래가 즉시 보여야 한다.
 
-- 중앙 기지 1개
-- 주변 산 노드 여러 개
-- 산과 기지를 연결하는 선
-- 좌상단 핵심 자원 HUD
+- 넓은 월드맵 위에 배치된 산 여러 개
+- 잠금/해금 상태가 구분되는 산 비주얼
+- 좌상단 핵심 자원 + Gold HUD
 - 하단 탭 또는 패널 전환 UI
+- 메인 월드에서 바로 자원을 팔 수 있는 최소 판매 패널
+- 선택한 산의 상세 진입 버튼 또는 상세 패널
 - 시뮬레이션이 흐르고 있다는 로그 또는 숫자 변화
 - 디버그 단축키 안내
 
@@ -65,6 +66,7 @@ Play를 누르면 최소한 아래가 즉시 보여야 한다.
 3. 콘솔을 안 봐도 화면상에서 자원 증가와 루프 진행이 보인다.
 4. `F1`부터 `F6`까지 디버그 기능으로 주요 상태를 즉시 검증할 수 있다.
 5. Stage 1에서 Stage 3까지 진행과 첫 프레스티지 전 검증이 가능하다.
+6. `DefaultStart` 기준 첫 프레스티지가 대략 75~90분 목표로 맞춰져 너무 빠르지도 너무 느리지도 않다.
 
 ---
 
@@ -205,33 +207,40 @@ Phase 1에서 Play 직후 보여야 하는 최소 요소는 다음과 같다.
 
 #### 월드
 
-- 중앙 기지 1개
 - Stage 1 산 2개 이상
 - Stage 2 산 3개 이상
 - Stage 3 검증용 잠금 산 일부
-- 산과 기지를 잇는 점선 경로
-- 이동 중인 카트 또는 트럭 더미 오브젝트
+- 산 노드 위에는 이름, 수치, 채굴 정보 텍스트를 띄우지 않음
+- 잠금 산은 흑백 또는 desaturated 상태
+- 현재 해금 가능한 다음 산은 흑백 + 약한 강조 표시
+- 해금 완료 산은 즉시 컬러 그래픽으로 전환
+- 메인 월드맵은 산을 고르는 화면이며, 광산 내부 채굴/배송 연출은 여기서 직접 보여주지 않음
 
 #### UI
 
-- 좌상단: 돈, 핵심 자원 3개, 현재 단계
+- 좌상단: Gold, 핵심 자원 3개, 현재 단계
 - 우상단: 디버그 버튼 또는 패널 토글
 - 하단: 6개 메인 탭
-- 중앙 하단: 선택 대상 정보 패널
+- 중앙 또는 우측: 선택 산 정보 패널
 - 우측 또는 좌측: 디버그 HUD
+- 메인 월드에서 판매 가능한 자원 리스트와 Sell 버튼
+- 광산 상세 화면 진입 버튼 또는 즉시 전환 흐름
 
 ### 7-2. 최소 기능
 
 아래 기능이 바로 되어야 한다.
 
 - 산 클릭 시 선택됨
-- 선택한 산의 자원, 속도, 왕복 시간 표시
-- 시간이 지나면 자원이 증가함
+- 잠긴 산 클릭 시 선행 산 필요 또는 해금 비용 안내가 표시됨
+- 해금 가능한 산 클릭 시 Gold 지불 후 컬러 상태로 전환됨
+- 선택한 산의 자원, 채굴 상태, 다음 배송까지 남은 시간 표시
+- 광산 상세 화면에서 채굴/적재/승강기/배송 흐름이 진행되고 배송 완료 시에만 전역 인벤토리가 증가함
+- 판매 패널에서 원자재/부품/제품 판매 시 Gold가 증가함
 - 생산 패널에서 레시피 목록이 보임
 - 버튼 클릭 시 제작 시작
 - 재료가 있으면 결과물이 생김
 - 단계 조건 충족 시 다음 스테이지 진입 가능 표시
-- 프레스티지 가능 상태를 계산할 수 있음
+- 프레스티지 가능 상태와 현재 예상 IP(티어1 기준 1~2 IP)를 계산할 수 있음
 
 ---
 
@@ -292,12 +301,13 @@ public sealed class GameState
 `SimulationRunner`가 매 프레임 또는 고정 틱마다 아래 순서로 처리한다.
 
 1. 입력 명령 반영
-2. 산 채굴 진행
-3. 운송 왕복 완료 처리
-4. 생산 큐 진행
-5. 단계 조건 판정
-6. 프레스티지 가능 여부 갱신
-7. 이벤트 버퍼 기록
+2. 해금된 산의 채굴 진행 상태 업데이트
+3. 산 내부 적재/승강기/배송 상태 진행
+4. 배송 완료분을 전역 인벤토리에 반영
+5. 생산 큐 진행
+6. 단계 조건 판정
+7. 프레스티지 가능 여부 갱신
+8. 이벤트 버퍼 기록
 
 예시:
 
@@ -322,8 +332,7 @@ public sealed class SimulationRunner
     public void Tick(float deltaTime)
     {
         CommandSystem.Execute(_commands, _definitions, _state);
-        MiningSystem.Tick(deltaTime, _definitions, _state);
-        TransportSystem.Tick(deltaTime, _definitions, _state);
+        MountainSimulationSystem.Tick(deltaTime, _definitions, _state);
         ProductionSystem.Tick(deltaTime, _definitions, _state);
         ProgressionSystem.Evaluate(_definitions, _state);
         PrestigeSystem.RefreshPreview(_definitions, _state);
@@ -334,7 +343,72 @@ public sealed class SimulationRunner
 
 이 구조면 EditMode 테스트에서 `Tick()`만 반복 호출해도 핵심 검증이 가능하다.
 
-### 8-4. 명령 큐 구조
+### 8-4. 광산 내부 채굴/배송 상태 머신
+
+현재 GDD 기준에서 메인 월드맵은 산을 고르는 화면이다.  
+따라서 메인 화면에서 경로 이동 오브젝트를 강조하는 구조가 아니라,  
+광산 상세 화면 안에서 채굴, 적재, 승강기 이동, 배송 완료가 진행되는 구조로 보는 것이 맞다.
+
+핵심 규칙:
+
+- 자원은 산에서 바로 전역 인벤토리로 들어가지 않는다.
+- 광산 내부 작업 구간에서 채굴이 진행되고, 적재 구간에서 광차에 실린다.
+- 승강기/출구 이송이 끝난 뒤 배송 완료 처리로 총량이 증가한다.
+- 메인 월드에서는 산 선택과 잠금 상태만 보여주고, 상세 채굴 수치는 광산 상세 화면 또는 HUD에만 보여준다.
+
+권장 상태:
+
+- `Idle`
+- `MiningInShaft`
+- `LoadingOreCart`
+- `LiftToSurface`
+- `DeliverToInventory`
+
+권장 상태 전이:
+
+```text
+Idle
+    -> mining starts
+MiningInShaft
+    -> ore amount resolved
+LoadingOreCart
+    -> cart filled
+LiftToSurface
+    -> surface delivery ready
+DeliverToInventory
+    -> deposit cargo to central inventory
+Idle
+```
+
+머메이드 도식:
+
+```mermaid
+stateDiagram-v2
+        [*] --> Idle
+        Idle --> MiningInShaft: mining starts
+        MiningInShaft --> LoadingOreCart: ore resolved
+        LoadingOreCart --> LiftToSurface: cart loaded
+        LiftToSurface --> DeliverToInventory: delivery ready
+        DeliverToInventory --> Idle: inventory updated
+```
+
+상태별 책임:
+
+- `Idle`: 다음 채굴 사이클 대기.
+- `MiningInShaft`: 채굴량 계산과 작업 시간 진행.
+- `LoadingOreCart`: 채굴 결과를 임시 적재 데이터로 변환.
+- `LiftToSurface`: 광차/승강기 이송 시간 진행.
+- `DeliverToInventory`: 적재분을 전역 인벤토리에 반영하고 이벤트 로그 기록.
+
+디버그 표시 권장값:
+
+- 선택 산의 현재 상태
+- 목표 산 ID
+- 현재 적재 자원 ID
+- 현재 적재량
+- 다음 상태 전이까지 남은 시간
+
+### 8-5. 명령 큐 구조
 
 UI가 직접 상태를 바꾸지 않도록 간단한 명령 큐를 둔다.
 
@@ -348,17 +422,26 @@ UI가 직접 상태를 바꾸지 않도록 간단한 명령 큐를 둔다.
 
 이렇게 해야 나중에 입력 방식이 바뀌어도 코어 로직이 흔들리지 않는다.
 
-### 8-5. 월드 팩토리
+### 8-6. 월드 팩토리
 
 월드 표시는 `WorldFactory`가 책임진다.
 
 역할:
 
-- 기지 생성
 - 산 노드 생성
-- 연결선 생성
-- 운송 유닛 뷰 생성
+- 월드맵 배경 레이어 생성
+- 잠금/해금 상태 오버레이 생성
 - 선택 강조 이펙트 생성
+
+표현 규칙:
+
+- 메인 월드는 산을 선택하는 탐색 화면이다.
+- 산 위에는 이름, 자원 수치, 배송 주기 같은 텍스트를 올리지 않는다.
+- 산 상세 정보는 클릭 후 선택 패널 또는 광산 상세 화면에서만 보여준다.
+- 잠금 산은 흑백 실루엣 또는 desaturated sprite 로 보여준다.
+- 현재 해금 가능한 다음 산은 흑백 상태지만 outline, pulse, beacon 중 하나로 약하게 강조한다.
+- 아직 선행 산이 해금되지 않은 산은 더 어둡게 눌러 두고 클릭 시 "이전 산 해금 필요"만 보여준다.
+- 해금 직후에는 컬러 광맥 포인트와 고유 톤을 활성화해 열린 상태가 즉시 읽혀야 한다.
 
 중요한 점:
 
@@ -367,11 +450,11 @@ UI가 직접 상태를 바꾸지 않도록 간단한 명령 큐를 둔다.
 
 예시 좌표 정책:
 
-- 기지: `(0, -3)`
-- 산은 반원형 또는 부채꼴 배치
-- 거리 = Stage에 따라 증가
+- 월드 중심은 특정 오브젝트가 아니라 카메라 기준 탐색 공간으로 본다.
+- 산은 넓은 필드에 흩어 배치한다.
+- Stage가 올라갈수록 더 먼 영역에 신규 산이 보이게 한다.
 
-### 8-6. HUD 팩토리
+### 8-7. HUD 팩토리
 
 `HudFactory`는 코드로 Canvas와 주요 텍스트, 버튼을 만든다.
 
@@ -382,7 +465,8 @@ UI가 직접 상태를 바꾸지 않도록 간단한 명령 큐를 둔다.
 - 루트 Canvas
 - 상단 자원 바
 - 하단 탭 바
-- 좌측 선택 패널
+- 선택 산 정보 패널
+- 판매 패널
 - 우측 디버그 패널
 
 ---
@@ -409,7 +493,8 @@ public static class DevConfig
 {
     public const BootProfile ActiveProfile = BootProfile.Stage3PrestigeReady;
     public const bool ShowDebugHudOnBoot = true;
-    public const bool AutoUnlockVisibleMountains = true;
+    public const bool UseSequentialMountainUnlockRules = true;
+    public const bool HighlightNextUnlockableMountain = true;
     public const float SimulationSpeedMultiplier = 1.0f;
 }
 ```
@@ -430,6 +515,7 @@ public static class DevConfig
 
 - 첫 프레스티지 직전 루프 확인
 - 최소 프로토타입의 기본 프로필로 가장 적절
+- Stage 1~3 산의 잠금/해금 시각 상태를 함께 검증
 
 `VisualSandbox`
 
@@ -468,12 +554,13 @@ public static class DevStateFactory
 `Stage3PrestigeReady` 기준으로 Play를 누르면 아래처럼 동작해야 한다.
 
 1. Stage 3 상태로 시작한다.
-2. 목재, 구리, 철, 석유, 알루미늄 체인의 핵심 중간 자원이 일부 지급된다.
+2. 목재, 구리, 철, 석유, 알루미늄 체인의 핵심 중간 자원이 일부 지급되고 Gold도 제한적으로 지급된다.
 3. 복합소재패널, 기초회로보드, 스마트기계, 첨단작업대 중 1~2개는 제작 가능한 상태다.
-4. 화면에는 Stage 1~3 산이 보이고 일부는 이미 해금되어 있다.
-5. 카트나 트럭 더미 유닛이 왕복 중이다.
-6. 상단 HUD에서 자원 숫자가 조금씩 변한다.
-7. 생산 패널에서 버튼 몇 번만 누르면 첫 프레스티지 조건 근처까지 갈 수 있다.
+4. 화면에는 Stage 1~3 산이 보이고 일부는 이미 해금되어 있다. 잠금 산은 흑백, 다음 해금 가능 산은 흑백 강조, 해금 산은 컬러다. 산 위에는 정보 텍스트가 없다.
+5. 메인 월드에서는 산 선택과 잠금 상태만 보이고, 광산 상세 화면에 들어가면 채굴/적재/승강기/배송 흐름이 보인다.
+6. 상단 HUD에서 자원 숫자는 배송 완료 시점에 맞춰 증가한다.
+7. 판매 패널에서 자원을 팔아 Gold를 늘리고 다음 산 해금 흐름을 바로 검증할 수 있다.
+8. 생산 패널과 판매 흐름을 함께 써도 첫 프레스티지가 즉시 성립하지는 않고, 직전 상태까지만 빠르게 확인된다.
 
 즉, 시작 후 10초 안에 "이 루프가 뭔지"가 보여야 한다.
 
@@ -490,30 +577,37 @@ Inspector를 쓰지 않기 때문에 디버그 기능은 선택이 아니라 필
 - `F3`: 다음 단계 강제 진입
 - `F4`: 선택 레시피 즉시 완성
 - `F5`: 프레스티지 미리보기 갱신
-- `F6`: 런 리셋, 영구 진행 유지
+- `F6`: 런 리셋 (프레스티지와 동일 — 아래 보존 규칙 참조)
 - `F7`: 시뮬레이션 속도 x1/x5/x20 전환
-- `F8`: 모든 산 표시 토글
+- `F8`: 잠금/해금 시각 상태 디버그 토글
 - `Space`: 일시정지
+
+> **F6 리셋 보존 규칙 (프레스티지 리셋과 동일):**
+> - **초기화**: Gold, 해금된 산 목록, 산별 업그레이드, 일반 자원, 진행 중 레시피, workerAssignments, highestStageThisRun→1, stage→1
+> - **유지**: industryPoints, ipUpgrades, mastery, workers, diamonds, gachaPity, prestigeTier, prestigeItems, mountainNames, 업적/튜토리얼 완료
 
 ### 11-2. 디버그 HUD 표시 항목
 
 - 현재 프로필
 - 현재 단계
-- 돈
+- Gold
 - 프레스티지 예상 보상
 - 초당 채굴량
-- 초당 운송량
+- 초당 배송량
 - 활성 생산 큐 수
 - 선택 산 ID
-- 선택 산 왕복 시간
+- 선택 산 배송 주기
+- 다음 해금 가능 산 ID
+- 선택 산 해금 상태
 - 최근 이벤트 로그 10개
 
 ### 11-3. 이벤트 로그 예시
 
-- `Mountain mountain_03 delivered 2 iron_ore`
+- `Mountain mountain_03 delivered 2 iron_ore to inventory`
+- `Mountain mountain_04 unlocked for 700 gold`
 - `Recipe copper_ingot completed`
 - `Stage advanced to 3`
-- `Prestige preview updated: 2 IP`
+- `Prestige preview updated: 1 IP`
 
 로그는 개발 중 콘솔만 보지 않도록 화면에도 보여야 한다.
 
@@ -526,7 +620,7 @@ Inspector를 쓰지 않기 때문에 디버그 기능은 선택이 아니라 필
 ### 12-1. 우선 작성할 테스트
 
 1. 채굴 속도 계산 테스트
-2. 왕복 시간 계산 테스트
+2. 배송 주기 계산 테스트
 3. 생산 입력 소비 테스트
 4. 생산 완료 결과물 지급 테스트
 5. Stage 1 -> 2 조건 테스트
@@ -537,7 +631,7 @@ Inspector를 쓰지 않기 때문에 디버그 기능은 선택이 아니라 필
 
 - `MiningSystem_CalculatesExpectedThroughput()`
 - `ProductionSystem_ConsumesInputsAndCreatesOutput()`
-- `ProgressionSystem_UnlocksStage2_WhenWheelbarrowAndPickaxeReady()`
+- `ProgressionSystem_UnlocksStage2_WhenMountain2UnlockedAndProductionStarted()`
 - `PrestigeSystem_ReturnsExpectedIp_ForTier1State()`
 
 ### 12-3. 테스트 기준
@@ -557,7 +651,7 @@ PlayMode 테스트는 런타임 연결 검증용이다.
 1. Play 시 `GameBootstrap` 자동 생성됨
 2. HUD가 자동 생성됨
 3. 산 노드가 화면에 생성됨
-4. 2초 경과 후 자원이 증가함
+4. 광산 상세 화면 또는 시뮬레이션 진행 후 배송 완료 시 자원이 증가함
 5. 디버그 명령 실행 시 상태가 바뀜
 
 ### 13-2. 통과 기준
@@ -579,8 +673,36 @@ PlayMode 테스트는 런타임 연결 검증용이다.
 - 4개 크로스 레시피: 복합소재패널, 기초회로보드, 스마트기계, 첨단작업대
 - 첫 프레스티지 아이템: 소규모공장
 - 산 8개 이하의 축소 맵
+- 산 선행 해금 규칙과 흑백/컬러 시각 전환
+- Gold 판매 패널과 다음 산 해금 흐름
 - 6개 메인 탭 UI 껍데기
 - 디버그 HUD
+
+### 14-3. 초기 경제 밸런스 기준
+
+최소 프로토타입의 경제 밸런스는 아래를 기준으로 잡는다.
+
+- `DefaultStart` 기준 첫 프레스티지는 75~90분 목표
+- 산 #2 해금은 원재료 판매 중심으로 5~10분 내 체감 가능
+- 산 #3~#5 해금부터는 1차/2차 가공품 판매를 섞어야 자연스럽다.
+- 첫 프레스티지 직전에는 공장설비, 전기장치, 케이스 생산이 유효하지만 과도하게 압도적이면 안 된다.
+- 티어1 프레스티지 예상 IP는 기본 1, 잘 풀리면 2 정도가 적절하다.
+- IP 업그레이드는 강한 단일 점프가 아니라 여러 번 쌓여 체감되는 구조여야 한다.
+
+판매가 기준 예시:
+
+- 원목 3 Gold
+- 구리광석 4 Gold
+- 목재 10 Gold
+- 동괴 12 Gold
+- 합판 20 Gold
+- 구리선 22 Gold
+- 가구 부품 54 Gold
+- 전선 다발 58 Gold
+- 책상 140 Gold
+- 전기 장치 155 Gold
+- 공장 설비 180 Gold
+- 케이스 145 Gold
 
 ### 14-2. 제외
 
@@ -601,7 +723,7 @@ PlayMode 테스트는 런타임 연결 검증용이다.
 ### 15-1. 메인 레이아웃
 
 - 좌측 상단: 자원, 화폐, 단계
-- 중앙: 산 필드와 기지
+- 중앙: 산을 고르는 월드맵
 - 우측: 선택 정보 또는 디버그 정보
 - 하단: 메인 메뉴 6개
 
@@ -662,7 +784,7 @@ PlayMode 테스트는 런타임 연결 검증용이다.
 ### 17-2. 형태 키워드
 
 - 산은 실루엣이 강해야 한다
-- 기지는 작은 픽셀 성채처럼 진화해야 한다
+- 공장/허브 패널은 작은 산업 거점처럼 단계별로 무게감이 늘어나야 한다
 - 운송 수단은 작아도 식별 가능한 개성을 가져야 한다
 - 광물 색은 체인별로 분명히 구분되어야 한다
 
@@ -689,7 +811,7 @@ PlayMode 테스트는 런타임 연결 검증용이다.
 실무 권장:
 
 - 월드 스프라이트는 `16x16`, `32x32`, `64x64` 배수 기준으로 설계
-- 산 노드, 기지, 운송수단처럼 중요한 오브젝트는 정수 배수 크기를 유지
+- 산 노드, 광산 설비, 운송수단처럼 중요한 오브젝트는 정수 배수 크기를 유지
 
 ### 18-2. 2단계 - 팔레트 보드 제작
 
@@ -722,7 +844,7 @@ PlayMode 테스트는 런타임 연결 검증용이다.
 3. 읽힘 확인
 4. 그 뒤 색상 적용
 
-이렇게 해야 산 노드와 기지가 배경에 묻히지 않는다.
+이렇게 해야 산 노드와 공장/허브 패널 포인트가 배경에 묻히지 않는다.
 
 ### 18-4. 4단계 - 레이어 분리 규칙
 
@@ -764,9 +886,9 @@ PlayMode 테스트는 런타임 연결 검증용이다.
 - 석영산: 청백색 크리스털 포인트
 - 우라늄산: 녹청색 발광 틈
 
-### 19-2. 기지 제작 규칙
+### 19-2. 공장/허브 패널 제작 규칙
 
-기지는 Stage 상승에 따라 시각적으로 커져야 한다.
+공장/허브 패널은 Stage 상승에 따라 시각적으로 확장되어야 한다.
 
 최소 단계별 변화:
 
@@ -775,15 +897,14 @@ PlayMode 테스트는 런타임 연결 검증용이다.
 - Stage 3: 가공 설비 실루엣 추가
 - Stage 4+: 안테나, 탱크, 발전 설비 등 확장
 
-즉, 기지는 단순 아이콘이 아니라 진행도 표시 장치 역할도 해야 한다.
+즉, 공장/허브 패널은 단순 아이콘이 아니라 진행도 표시 장치 역할도 해야 한다.
 
 ### 19-3. 운송수단 제작 규칙
 
 아주 작은 크기여도 다음은 읽혀야 한다.
 
-- 사람
-- 손수레
-- 광차
+- 사람 (도보)
+- 광차 (기본)
 - 트럭
 - 드론 또는 고급 수송 수단
 
@@ -823,7 +944,7 @@ PlayMode 테스트는 런타임 연결 검증용이다.
 
 ### 20-3. 추천 연출
 
-- 기지 창문 깜빡임
+- 공장 패널 조명 깜빡임
 - 용광로 오렌지 글로우
 - 광물 반짝임
 - 산 뒤편 얇은 안개 이동
@@ -844,7 +965,7 @@ PlayMode 테스트는 런타임 연결 검증용이다.
 
 1. 운송 유닛 이동
 2. 산 반짝임
-3. 기지 조명 점멸
+3. 공장 패널 조명 점멸
 4. 제작 완료 짧은 펄스
 5. 배경 안개/구름 이동
 6. UI 선택 글로우
@@ -905,7 +1026,7 @@ UI는 "황동 장치판 + 어두운 야간 산업 배경" 느낌이 적절하다
 
 ### 23-2. 둘째 주
 
-- 기지 3단계 버전 제작
+- 공장/허브 패널 3단계 버전 제작
 - 산 6종 우선 제작
 - 운송수단 4종 러프 제작
 - UI 패널 샘플 1종 제작
@@ -940,7 +1061,7 @@ UI는 "황동 장치판 + 어두운 야간 산업 배경" 느낌이 적절하다
 ### 24-2. 아트 체크리스트
 
 - 산 실루엣이 자원별로 구분되는가
-- 기지가 Stage별로 진화해 보이는가
+- 공장/허브 패널이 Stage별로 진화해 보이는가
 - 배경과 플레이 필드가 분리되어 보이는가
 - 광물 발광이 과하지 않은가
 - UI와 배경 색이 충돌하지 않는가
@@ -971,7 +1092,9 @@ Requirements:
 - Create a DevConfig with BootProfile presets
 - Default profile must be Stage3PrestigeReady
 - Build GameState, SimulationRunner, CommandQueue, and DebugHud architecture
-- Spawn a base, mountain nodes, connection lines, a simple HUD, and a debug overlay from code
+- Spawn a selectable mountain world map, a simple HUD, a sell panel, and a debug overlay from code
+- Support grayscale locked mountains, a highlighted next-unlockable mountain, and full-color unlocked mountains
+- Include a shared Gold economy and a simple sell panel on the main world side
 - Add debug hotkeys F1-F8 and Space
 - Show immediate state changes after pressing Play
 
@@ -996,12 +1119,19 @@ Scope:
 - Small factory prestige item preview
 
 Implement:
-- Mining tick logic
-- Transport round-trip logic
+- arrival-based mining and loading logic
+- mine-internal delivery cycle logic
 - Production queue logic
+- central inventory plus sell-to-Gold flow
+- sequential mountain unlock flow driven by Gold and prerequisite mountains
 - Stage progression checks
 - Prestige preview calculation
 - Runtime-generated HUD and debug panel
+
+Balance targets:
+- DefaultStart should aim for a first prestige pacing around 75 to 90 minutes
+- the first prestige preview should usually be 1 IP and only reach 2 IP in stronger states
+- permanent prestige upgrade effects should stay modest rather than explosive
 ```
 
 ### Prompt 3 - Art Sandbox Setup
@@ -1017,6 +1147,8 @@ Requirements:
 - URP-friendly 2D scene structure
 - Parallax background layers
 - Base and mountain placeholder sprites generated or represented with simple shapes
+- Locked mountains should read as grayscale or desaturated silhouettes
+- Unlocked mountains should immediately read as full-color resource-specific landmarks
 - Lighting hooks for glow accents
 - Camera zoom presets
 - All scene objects spawned from code with no Inspector references
